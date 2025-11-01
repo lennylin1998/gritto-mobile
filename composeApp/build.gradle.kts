@@ -40,6 +40,8 @@ kotlin {
             implementation(compose.components.uiToolingPreview)
             implementation(libs.androidx.lifecycle.viewmodelCompose)
             implementation(libs.androidx.lifecycle.runtimeCompose)
+            implementation("moe.tlaster:precompose:1.5.10")
+            implementation("moe.tlaster:precompose-viewmodel:1.5.10")
         }
         commonTest.dependencies {
             implementation(libs.kotlin.test)
