@@ -19,13 +19,16 @@ import moe.tlaster.precompose.navigation.Navigator
 import moe.tlaster.precompose.navigation.path
 import moe.tlaster.precompose.navigation.rememberNavigator
 import org.jetbrains.compose.ui.tooling.preview.Preview
+import com.gritto.app.theme.GrittoTheme
 
 @Composable
 @Preview
 fun App() {
-    PreComposeApp {
-        val navigator = rememberNavigator()
-        GrittoNavHost(navigator = navigator)
+    GrittoTheme {
+        PreComposeApp {
+            val navigator = rememberNavigator()
+            GrittoNavHost(navigator = navigator)
+        }
     }
 }
 
