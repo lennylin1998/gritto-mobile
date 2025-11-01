@@ -40,6 +40,8 @@ kotlin {
             implementation(compose.components.uiToolingPreview)
             implementation(libs.androidx.lifecycle.viewmodelCompose)
             implementation(libs.androidx.lifecycle.runtimeCompose)
+            implementation("moe.tlaster:precompose:1.5.10")
+            implementation("moe.tlaster:precompose-viewmodel:1.5.10")
         }
         commonTest.dependencies {
             implementation(libs.kotlin.test)
@@ -57,6 +59,7 @@ android {
         targetSdk = libs.versions.android.targetSdk.get().toInt()
         versionCode = 1
         versionName = "1.0"
+        buildConfigField("String", "API_BASE_URL", "\"${project.properties["API_BASE_URL"]}\"")
     }
     packaging {
         resources {

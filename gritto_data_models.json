@@ -51,7 +51,7 @@
   "Chat": {
     "id": "string",
     "userId": "string (reference to User)",
-    "goalId": "string",
+    "goalPreviewId": "string (optional, reference to GoalPreview)",
     "sessionId": "string (optional)",
     "entries": [
       {
@@ -61,5 +61,36 @@
       }
     ],
     "createdAt": "Timestamp"
+  },
+  "GoalPreview": {
+    "id": "string",
+    "userId": "string (reference to User)",
+    "sessionId": "string (reference to Chat session)",
+    "goalDraft": {
+      "title": "string",
+      "description": "string (optional)",
+      "context": "string (optional)",
+      "priority": "number (optional)",
+      "minHoursPerWeek": "number (optional)",
+      "color": "number (optional)",
+      "milestones": [
+        {
+          "title": "string",
+          "description": "string (optional)",
+          "tasks": [
+            {
+              "title": "string",
+              "description": "string (optional)",
+              "date": "Timestamp (optional)",
+              "estimatedHours": "number (optional)"
+            }
+          ]
+        }
+      ]
+    },
+    "iteration": "number (auto-increment for refinement loops)",
+    "status": "enum('draft', 'awaiting_consent', 'finalized')",
+    "createdAt": "Timestamp",
+    "updatedAt": "Timestamp"
   }
 }
