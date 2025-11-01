@@ -1,7 +1,5 @@
 ### Nav Bar
 
-![image.png](attachment:0c034608-d4a6-4bfc-a5cf-2aee260fc81b:image.png)
-
 - Layout: Use the style in the image
 - Fields:
 
@@ -21,8 +19,8 @@
 
 - Home Page
 
-  ![navbar_ui.jpg](navbar_ui.jpg)
-
+  ![navbar_ui.png](navbar_ui.png)
+    ![img_1.png](img_1.png)
     - Layout:
 
       use the general layout style from the image, but follow the detail below to create exact layout.
@@ -37,7 +35,7 @@
             - Each Goal Card shows Goal name, progress, and has a small color label on the left
     - Interaction:
         - When user swipe left/right on Task List card, should be scroll to another Task List Card with snappy effect
-        - When user click task checkbox, the Task should be crossed and color ofTask should change to light grey
+        - When user click task checkbox, the Task should disappear, and a undo toast should pop up at the buttom of the screen
         - When user press a goal, it should be draggable, and change the order of the goal would directly change its priority(for every swap in order, do swap in priority)
     - Nav Logic
         - When user tap a goal, navigate to Goal Tree Page with reference to the goal

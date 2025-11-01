@@ -3,7 +3,8 @@ package com.gritto.app.model
 data class DailyTask(
     val id: String,
     val title: String,
-    val time: String,
+    val description: String,
+    val scheduleLabel: String,
     val completed: Boolean
 )
 
@@ -33,9 +34,41 @@ sealed class ChatMessage(open val id: String, open val text: String) {
 
 object SampleData {
     val todayTasks = listOf(
-        DailyTask(id = "task-1", title = "Morning focus session", time = "07:30", completed = false),
-        DailyTask(id = "task-2", title = "Submit project outline", time = "11:00", completed = true),
-        DailyTask(id = "task-3", title = "Run 5km workout", time = "18:30", completed = false)
+        DailyTask(
+            id = "task-1",
+            title = "Meeting with UI team",
+            description = "To be successful in time management...",
+            scheduleLabel = "10:00 AM",
+            completed = false
+        ),
+        DailyTask(
+            id = "task-2",
+            title = "Product",
+            description = "Check the business plan",
+            scheduleLabel = "11:30 AM",
+            completed = true
+        ),
+        DailyTask(
+            id = "task-3",
+            title = "Desktop UI mockup",
+            description = "Prototype new client's website",
+            scheduleLabel = "01:00 PM",
+            completed = false
+        ),
+        DailyTask(
+            id = "task-4",
+            title = "Meeting with SMM Team",
+            description = "Meeting about new social media strategy",
+            scheduleLabel = "02:30 PM",
+            completed = false
+        ),
+        DailyTask(
+            id = "task-5",
+            title = "Coffee with Mike",
+            description = "Enjoy!",
+            scheduleLabel = "06:00 PM",
+            completed = false
+        )
     )
 
     val goals = listOf(

@@ -59,6 +59,7 @@ android {
         targetSdk = libs.versions.android.targetSdk.get().toInt()
         versionCode = 1
         versionName = "1.0"
+        android.buildFeatures.buildConfig = true
         buildConfigField("String", "API_BASE_URL", "\"${project.properties["API_BASE_URL"]}\"")
     }
     packaging {
