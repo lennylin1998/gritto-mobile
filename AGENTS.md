@@ -12,6 +12,7 @@
 - `./gradlew :composeApp:check` executes unit tests and Gradle verification tasks across targets.
 - `./gradlew :composeApp:clean` clears intermediate build outputs when syncing or version bumps fail.
 - For iOS, open `iosApp/iosApp.xcodeproj` in Xcode and run the `iosApp` scheme against the desired simulator.
+- For JetBrains Compose Multiplatform previews, import `org.jetbrains.compose.ui.tooling.preview.Preview` instead of `androidx.compose.ui.tooling.preview.Preview`.
 
 ## Coding Style & Naming Conventions
 - Follow standard Kotlin style: 4-space indentation, trailing commas for multiline collections, and explicit visibility when not public.

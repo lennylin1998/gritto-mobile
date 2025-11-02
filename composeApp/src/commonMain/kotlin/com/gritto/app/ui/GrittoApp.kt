@@ -1,65 +1,32 @@
 package com.gritto.app.ui
 
 import androidx.compose.foundation.layout.systemBarsPadding
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateListOf
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Flag
-import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.Person
-import androidx.compose.material.icons.filled.Schedule
-import androidx.compose.material.icons.filled.Chat
 import androidx.compose.material3.Scaffold
-import androidx.compose.runtime.snapshots.SnapshotStateList
+import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import com.gritto.app.model.ChatMessage
-import com.gritto.app.model.SampleData
-import com.gritto.app.model.DailyTask
-import com.gritto.app.model.GoalProgress
-import com.gritto.app.model.ScheduledTask
-import com.gritto.app.ui.components.GrittoBottomBar
-import com.gritto.app.ui.screens.GoalsScreen
+import com.gritto.app.navigation.GrittoNavRoutes
+import com.gritto.app.ui.components.GrittoNavBar
+import com.gritto.app.ui.components.MainNavDestination
+import com.gritto.app.ui.screens.ChatScreen
 import com.gritto.app.ui.screens.HomeScreen
 import com.gritto.app.ui.screens.OnboardingScreen
 import com.gritto.app.ui.screens.ProfileScreen
-import com.gritto.app.ui.screens.ReflectionScreen
-import com.gritto.app.ui.screens.TaskSchedulesScreen
-
-enum class MainDestination(
-    val label: String,
-    val icon: androidx.compose.ui.graphics.vector.ImageVector
-) {
-    Home("Home", Icons.Filled.Home),
-    Goals("Goals", Icons.Filled.Flag),
-    Reflection("Reflection", Icons.Filled.Chat),
-    Schedules("Task Schedules", Icons.Filled.Schedule),
-    Profile("Profile", Icons.Filled.Person)
-}
+import moe.tlaster.precompose.navigation.Navigator
 
 @Composable
-fun GrittoApp(modifier: Modifier = Modifier) {
-    var isSignedIn by remember { mutableStateOf(false) }
-    var selectedDestination by remember { mutableStateOf(MainDestination.Home) }
-
-    val todayTasks = remember { SampleData.todayTasks }
-    val goals = remember { SampleData.goals }
-    val scheduledTasks = remember { SampleData.scheduledTasks }
-    val chatHistory = remember {
-        mutableStateListOf<ChatMessage>().apply { addAll(SampleData.initialChat) }
-    }
-    var messageCounter by remember { mutableStateOf(chatHistory.size) }
-
-    if (!isSignedIn) {
+fun GrittoApp(
+    navigator: Navigator,
+    state: GrittoState,
+    modifier: Modifier = Modifier,
+) {
+    if (!state.isSignedIn) {
         OnboardingScreen(
             onSignIn = {
-                isSignedIn = true
-                selectedDestination = MainDestination.Home
+                state.isSignedIn = true
+                state.selectedDestination = MainNavDestination.Home
             },
-            modifier = modifier
+            modifier = modifier,
         )
         return
     }
@@ -67,61 +34,70 @@ fun GrittoApp(modifier: Modifier = Modifier) {
     Scaffold(
         modifier = modifier.systemBarsPadding(),
         bottomBar = {
-            GrittoBottomBar(
-                selected = selectedDestination,
-                onSelected = { selectedDestination = it }
+            GrittoNavBar(
+                selectedDestination = state.selectedDestination,
+                onDestinationSelected = { state.selectedDestination = it },
             )
-        }
+        },
     ) { padding ->
-        when (selectedDestination) {
-            MainDestination.Home -> HomeScreen(
-                tasks = todayTasks,
-                goals = goals,
-                contentPadding = padding
+        when (state.selectedDestination) {
+            MainNavDestination.Home -> HomeScreen(
+                taskLists = state.homeTaskLists,
+                goals = state.homeGoals,
+                contentPadding = padding,
+                onTaskListsChange = { state.homeTaskLists = it },
+                onGoalReordered = { updated ->
+                    state.homeGoals.apply {
+                        clear()
+                        addAll(updated)
+                    }
+                },
+                onGoalClick = { goal ->
+                    navigator.navigate(GrittoNavRoutes.goalTree(goal.id))
+                },
+                onTaskClick = { task ->
+                    navigator.navigate(GrittoNavRoutes.task(task.id))
+                },
             )
-            MainDestination.Goals -> GoalsScreen(
-                goals = goals,
-                contentPadding = padding
-            )
-            MainDestination.Reflection -> ReflectionScreen(
-                messages = chatHistory,
+
+            MainNavDestination.Chat -> ChatScreen(
+                messages = state.chatHistory,
                 onSendMessage = { text ->
-                    appendReflectionMessage(
-                        chatHistory = chatHistory,
-                        nextId = { ++messageCounter },
-                        userMessage = text
+                    appendChatMessage(
+                        state = state,
+                        userMessage = text,
                     )
                 },
-                contentPadding = padding
+                onBack = { state.selectedDestination = MainNavDestination.Home },
+                onShowGoalPreview = { navigator.navigate(GrittoNavRoutes.GoalTreePreview) },
+                contentPadding = padding,
             )
-            MainDestination.Schedules -> TaskSchedulesScreen(
-                tasks = scheduledTasks,
-                contentPadding = padding
-            )
-            MainDestination.Profile -> ProfileScreen(
+
+            MainNavDestination.Profile -> ProfileScreen(
+                profile = state.profile,
+                onEditHours = { navigator.navigate(GrittoNavRoutes.ProfileEdit) },
                 onSignOut = {
-                    isSignedIn = false
-                    selectedDestination = MainDestination.Home
+                    state.isSignedIn = false
+                    state.selectedDestination = MainNavDestination.Home
                 },
-                contentPadding = padding
+                contentPadding = padding,
             )
         }
     }
 }
 
-private fun appendReflectionMessage(
-    chatHistory: SnapshotStateList<ChatMessage>,
-    nextId: () -> Int,
-    userMessage: String
+private fun appendChatMessage(
+    state: GrittoState,
+    userMessage: String,
 ) {
     if (userMessage.isBlank()) return
-    val trimmedMessage = userMessage.trim()
-    val userId = "chat-${nextId()}"
-    chatHistory.add(ChatMessage.User(id = userId, text = trimmedMessage))
+    val trimmed = userMessage.trim()
+    val userId = "chat-${++state.messageCounter}"
+    state.chatHistory.add(ChatMessage.User(id = userId, text = trimmed))
 
-    val agentResponse = buildAgentReply(trimmedMessage)
-    val agentId = "chat-${nextId()}"
-    chatHistory.add(ChatMessage.Agent(id = agentId, text = agentResponse))
+    val agentReply = buildAgentReply(trimmed)
+    val agentId = "chat-${++state.messageCounter}"
+    state.chatHistory.add(ChatMessage.Agent(id = agentId, text = agentReply))
 }
 
 private fun buildAgentReply(message: String): String {
@@ -131,5 +107,5 @@ private fun buildAgentReply(message: String): String {
         message.length > 120 -> "That's a thorough reflection. Summarize the single action you'll take next."
         else -> "Got it. What single next step keeps you aligned with your goal?"
     }
-    return "$encouragement"
+    return encouragement
 }
