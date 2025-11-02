@@ -1,13 +1,12 @@
 package com.gritto.app.ui.screens
 
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material3.Card
-import androidx.compose.material3.Checkbox
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -20,10 +19,11 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.foundation.layout.Column
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.sp
 import androidx.compose.foundation.layout.PaddingValues
 import com.gritto.app.model.DailyTask
 import com.gritto.app.model.GoalProgress
+import com.gritto.app.ui.components.TaskItem
+import androidx.compose.ui.graphics.Color
 
 @Composable
 fun HomeScreen(
@@ -49,8 +49,11 @@ fun HomeScreen(
                 style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold)
             )
         }
-        items(tasks) { task ->
-            TaskCard(task = task)
+        itemsIndexed(tasks) { index, task ->
+            TaskCard(
+                task = task,
+                indicatorColor = taskAccentColors[index % taskAccentColors.size]
+            )
         }
         item {
             Spacer(modifier = Modifier.height(8.dp))
@@ -66,36 +69,17 @@ fun HomeScreen(
 }
 
 @Composable
-private fun TaskCard(task: DailyTask) {
-    Card {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 12.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
-        ) {
-            Column(
-                modifier = Modifier.weight(1f)
-            ) {
-                Text(
-                    text = task.title,
-                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold)
-                )
-                Text(
-                    text = task.time,
-                    style = MaterialTheme.typography.labelLarge,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-    Checkbox(
-        checked = task.completed,
-        onCheckedChange = {},
-        enabled = false,
-        modifier = Modifier.padding(start = 12.dp)
+private fun TaskCard(
+    task: DailyTask,
+    indicatorColor: Color
+) {
+    TaskItem(
+        title = task.title,
+        description = task.description,
+        scheduleLabel = task.scheduleLabel,
+        indicatorColor = indicatorColor,
+        checked = task.completed
     )
-        }
-    }
 }
 
 @Composable
@@ -130,3 +114,10 @@ private fun GoalCard(goal: GoalProgress) {
         }
     }
 }
+
+private val taskAccentColors = listOf(
+    Color(0xFF4A6BFF),
+    Color(0xFF61D992),
+    Color(0xFF9F74FF),
+    Color(0xFFFF8A65)
+)

@@ -1,7 +1,5 @@
 ### Nav Bar
 
-![image.png](attachment:0c034608-d4a6-4bfc-a5cf-2aee260fc81b:image.png)
-
 - Layout: Use the style in the image
 - Fields:
 
@@ -21,8 +19,10 @@
 
 - Home Page
 
-  ![navbar_ui.jpg](navbar_ui.jpg)
-
+  ![navbar_ui.png](navbar_ui.png)
+    ![img_1.png](img_1.png)
+    ![goal_card.png](goal_card.png)
+    ![task_list_card_layout.png](task_list_card_layout.png)
     - Layout:
 
       use the general layout style from the image, but follow the detail below to create exact layout.
@@ -31,21 +31,22 @@
             - Task group by date, to form a Task List, presented as Card
             - Each Task List Card has date, and a list of Tasks, vertically stacked
             - Each Task should be presented as a checkbox with Task title, and have a small label of {start time: end time} under it
-            - There should be multiple Task List Card, horizontally aligned, with default being leftmost card, overflowing should be cut by screen
-        - Bottom Section: Goal List
+            - There should be multiple Task List Card, horizontally aligned, with default being leftmost card, overflowing should be cut by screen(refer to task_list_card_layout.png)
+        - Bottom Section: Goal List (ui refer to goal_card.png)
             - Presented each Goal as Card, vertically stacked
             - Each Goal Card shows Goal name, progress, and has a small color label on the left
     - Interaction:
         - When user swipe left/right on Task List card, should be scroll to another Task List Card with snappy effect
-        - When user click task checkbox, the Task should be crossed and color ofTask should change to light grey
+        - When user click task checkbox, the Task should disappear, and a undo toast should pop up at the buttom of the screen
         - When user press a goal, it should be draggable, and change the order of the goal would directly change its priority(for every swap in order, do swap in priority)
     - Nav Logic
         - When user tap a goal, navigate to Goal Tree Page with reference to the goal
         - When user tap a task (outside of checkbox), navigate to Task Page
+
 - Task Page/Task Edit Page
 
   ![page_ui.jpg](page_ui.jpg)
-    - Layout: A calendar like page
+    - Layout: A layout like page_ui.jpg
     - Fields:
         - Title: string
         - Date: date
@@ -111,10 +112,8 @@
         - On Profile Edit Page, if the value not changes and user click cancel or back gesture, or the value changes but user click save, navigate straight back to Profile Page.
         - Profile Edit Page is the leaf of the navigation tree, it can only navigate back to previous page
 - Goal Tree Page
-    - Layout: Toggle-able Tree structure, like canvas
-
-      ![tree_ui.jpg](tree_ui.jpg)
-
+    - Layout: Toggle-able Tree structure, like the expand_list image
+        ![expand_list.png](expand_list.png)
     - Fields:
     - Interaction:
         - Sticky Title
@@ -140,7 +139,7 @@
 - Chat Page
     - Layout:
 
-      Generally follows the Chat GPT’s layout, user message at right, AI response at left, text input at bottom
+      Generally follows the Chat GPT’s layout(chat_ui.jpg), user message at right, AI response at left, text input at bottom
 
       ![chat_ui.jpg](chat_ui.jpg)
 
@@ -152,11 +151,12 @@
         - On Tap Back button: Navigate back
         - On Tap Preview button: Navigate to Goal Tree Preview Page
 
-### Modal
-
-- Error Modal
-    - This Modal should only have a button to confirm and close the modal (right bottom corner)
-- Warning Modal
-    - This Modal should only have a button to confirm and close the modal (right bottom corner)
-- Choose Modal
-    - This Model should have two buttons, and a text field that describe the options
+### Dialog
+![dialog.jpg](dialog.jpg)
+Follow the ui design of dialog.jpg
+- Error Dialog
+    - This Dialog should only have a button to confirm and close the Dialog (right bottom corner)
+- Warning Dialog
+    - This Dialog should only have a button to confirm and close the Dialog (right bottom corner)
+- Choose Dialog
+    - This Dialog should have two buttons, and a text field that describe the options
