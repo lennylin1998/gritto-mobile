@@ -15,6 +15,7 @@ import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Logout
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.Button
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -33,76 +34,120 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.gritto.app.model.ProfileInfo
 import com.gritto.app.ui.components.DetailFieldRow
 import com.gritto.app.ui.components.EditActionBar
 import com.gritto.app.ui.components.WarningDialog
+import com.gritto.app.ui.viewmodel.ProfileUiState
 import moe.tlaster.precompose.navigation.BackHandler
-import moe.tlaster.precompose.navigation.Navigator
 
 @Composable
 fun ProfileScreen(
-    profile: ProfileInfo,
-    onEditHours: () -> Unit,
-    onSignOut: () -> Unit,
+    uiState: ProfileUiState,
     contentPadding: PaddingValues,
     modifier: Modifier = Modifier,
+    onRetry: () -> Unit = {},
+    onEditHours: () -> Unit = {},
+    onSignOut: () -> Unit = {},
 ) {
-    Column(
-        modifier = modifier
-            .fillMaxSize()
-            .padding(
-                start = 20.dp,
-                end = 20.dp,
-                top = contentPadding.calculateTopPadding() + 24.dp,
-                bottom = contentPadding.calculateBottomPadding() + 24.dp,
-            ),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(24.dp),
-    ) {
-        Surface(
-            modifier = Modifier.size(108.dp),
-            shape = CircleShape,
-            color = MaterialTheme.colorScheme.primaryContainer,
-            tonalElevation = 4.dp,
-        ) {
-            Icon(
-                imageVector = Icons.Filled.Person,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.primary,
-                modifier = Modifier
+    when {
+        uiState.isLoading -> {
+            Column(
+                modifier = modifier
                     .fillMaxSize()
-                    .padding(28.dp),
-            )
+                    .padding(contentPadding),
+                verticalArrangement = Arrangement.Center,
+                horizontalAlignment = Alignment.CenterHorizontally,
+            ) {
+                CircularProgressIndicator()
+            }
         }
-        Text(
-            text = profile.name,
-            style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
-        )
-        Text(
-            text = profile.email,
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
-        Column(
-            modifier = Modifier.fillMaxWidth(),
-            verticalArrangement = Arrangement.spacedBy(20.dp),
-        ) {
-            DetailFieldRow(label = "Name", value = profile.name)
-            DetailFieldRow(label = "Email", value = profile.email)
-            DetailFieldRow(
-                label = "Available Hours per Week",
-                value = profile.availableHoursPerWeek.toString(),
-                onClick = onEditHours,
-            )
+
+        uiState.error != null -> {
+            Column(
+                modifier = modifier
+                    .fillMaxSize()
+                    .padding(contentPadding)
+                    .padding(24.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+            ) {
+                Text(
+                    text = "We couldn’t load your profile.",
+                    style = MaterialTheme.typography.titleMedium,
+                )
+                Text(
+                    text = uiState.error,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    textAlign = TextAlign.Center,
+                )
+                Button(onClick = onRetry) {
+                    Text("Retry")
+                }
+            }
         }
-        Button(
-            onClick = onSignOut,
-            modifier = Modifier.fillMaxWidth(),
-        ) {
-            Icon(imageVector = Icons.Filled.Logout, contentDescription = "Sign out")
-            Text(text = "Sign out", modifier = Modifier.padding(start = 8.dp))
+
+        uiState.profile != null -> {
+            val profile = uiState.profile
+            Column(
+                modifier = modifier
+                    .fillMaxSize()
+                    .padding(
+                        start = 20.dp,
+                        end = 20.dp,
+                        top = contentPadding.calculateTopPadding() + 24.dp,
+                        bottom = contentPadding.calculateBottomPadding() + 24.dp,
+                    ),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(24.dp),
+            ) {
+                Surface(
+                    modifier = Modifier.size(108.dp),
+                    shape = CircleShape,
+                    color = MaterialTheme.colorScheme.primaryContainer,
+                    tonalElevation = 4.dp,
+                ) {
+                    Icon(
+                        imageVector = Icons.Filled.Person,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(28.dp),
+                    )
+                }
+                Text(
+                    text = profile.name,
+                    style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
+                )
+                Text(
+                    text = profile.email,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalArrangement = Arrangement.spacedBy(20.dp),
+                ) {
+                    DetailFieldRow(label = "Name", value = profile.name)
+                    DetailFieldRow(label = "Email", value = profile.email)
+                    DetailFieldRow(
+                        label = "Available Hours per Week",
+                        value = profile.availableHoursPerWeek.toString(),
+                        onClick = onEditHours,
+                    )
+                }
+                Button(
+                    onClick = onSignOut,
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    Icon(imageVector = Icons.Filled.Logout, contentDescription = "Sign out")
+                    Text(text = "Sign out", modifier = Modifier.padding(start = 8.dp))
+                }
+            }
         }
     }
 }
@@ -110,8 +155,10 @@ fun ProfileScreen(
 @Composable
 fun ProfileEditScreen(
     profile: ProfileInfo,
-    navigator: Navigator,
+    isSaving: Boolean,
+    errorMessage: String?,
     onSave: (Int) -> Unit,
+    onCancel: () -> Unit,
 ) {
     var hoursText by remember(profile) { mutableStateOf(profile.availableHoursPerWeek.toString()) }
     var showWarning by remember { mutableStateOf(false) }
@@ -122,7 +169,7 @@ fun ProfileEditScreen(
         if (isDirty) {
             showWarning = true
         } else {
-            navigator.goBack()
+            onCancel()
         }
     }
 
@@ -148,9 +195,8 @@ fun ProfileEditScreen(
                     if (parsed != null) {
                         onSave(parsed)
                     }
-                    navigator.goBack()
                 },
-                isSaveEnabled = hoursText.toIntOrNull() != null,
+                isSaveEnabled = !isSaving && hoursText.toIntOrNull() != null,
             )
         },
     ) { padding ->
@@ -171,6 +217,13 @@ fun ProfileEditScreen(
                 singleLine = true,
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
             )
+            if (errorMessage != null) {
+                Text(
+                    text = errorMessage,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.error,
+                )
+            }
         }
     }
 
@@ -180,7 +233,7 @@ fun ProfileEditScreen(
         message = "You have unsaved edits. If you leave now your updates will be lost.",
         onConfirm = {
             showWarning = false
-            navigator.goBack()
+            onCancel()
         },
         confirmLabel = "Discard",
         modifier = Modifier,

@@ -1,8 +1,12 @@
 package com.gritto.app.ui
 
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.systemBarsPadding
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Modifier
 import com.gritto.app.model.ChatMessage
 import com.gritto.app.navigation.GrittoNavRoutes
@@ -12,12 +16,15 @@ import com.gritto.app.ui.screens.ChatScreen
 import com.gritto.app.ui.screens.HomeScreen
 import com.gritto.app.ui.screens.OnboardingScreen
 import com.gritto.app.ui.screens.ProfileScreen
+import com.gritto.app.ui.viewmodel.HomeViewModel
+import com.gritto.app.ui.viewmodel.ProfileViewModel
 import moe.tlaster.precompose.navigation.Navigator
+import moe.tlaster.precompose.viewmodel.viewModel
 
 @Composable
 fun GrittoApp(
     navigator: Navigator,
-    state: GrittoState,
+    state: GrittoAppState,
     modifier: Modifier = Modifier,
 ) {
     if (!state.isSignedIn) {
@@ -41,23 +48,10 @@ fun GrittoApp(
         },
     ) { padding ->
         when (state.selectedDestination) {
-            MainNavDestination.Home -> HomeScreen(
-                taskLists = state.homeTaskLists,
-                goals = state.homeGoals,
-                contentPadding = padding,
-                onTaskListsChange = { state.homeTaskLists = it },
-                onGoalReordered = { updated ->
-                    state.homeGoals.apply {
-                        clear()
-                        addAll(updated)
-                    }
-                },
-                onGoalClick = { goal ->
-                    navigator.navigate(GrittoNavRoutes.goalTree(goal.id))
-                },
-                onTaskClick = { task ->
-                    navigator.navigate(GrittoNavRoutes.task(task.id))
-                },
+            MainNavDestination.Home -> HomeRoute(
+                state = state,
+                navigator = navigator,
+                padding = padding,
             )
 
             MainNavDestination.Chat -> ChatScreen(
@@ -73,21 +67,78 @@ fun GrittoApp(
                 contentPadding = padding,
             )
 
-            MainNavDestination.Profile -> ProfileScreen(
-                profile = state.profile,
-                onEditHours = { navigator.navigate(GrittoNavRoutes.ProfileEdit) },
-                onSignOut = {
-                    state.isSignedIn = false
-                    state.selectedDestination = MainNavDestination.Home
-                },
-                contentPadding = padding,
+            MainNavDestination.Profile -> ProfileRoute(
+                state = state,
+                navigator = navigator,
+                padding = padding,
             )
         }
     }
 }
 
+@Composable
+private fun HomeRoute(
+    state: GrittoAppState,
+    navigator: Navigator,
+    padding: PaddingValues,
+) {
+    val viewModel = viewModel(modelClass = HomeViewModel::class) {
+        HomeViewModel(state.repository)
+    }
+    val uiState by viewModel.uiState.collectAsState()
+    LaunchedEffect(state.sessionToken) {
+        if (state.sessionToken != null) {
+            viewModel.refresh()
+        }
+    }
+
+    HomeScreen(
+        taskLists = uiState.taskLists,
+        goals = uiState.goals,
+        contentPadding = padding,
+        isLoading = uiState.isLoading,
+        errorMessage = uiState.error,
+        onRetry = { viewModel.refresh() },
+        onTaskListsChange = { viewModel.onTaskListsChange(it) },
+        onGoalReordered = { viewModel.onGoalsReordered(it) },
+        onGoalClick = { goal ->
+            navigator.navigate(GrittoNavRoutes.goalTree(goal.id))
+        },
+        onTaskClick = { task ->
+            navigator.navigate(GrittoNavRoutes.task(task.id))
+        },
+        onTaskChecked = { task -> viewModel.setTaskCompletion(task.id, true) },
+        onTaskCompletionUndo = { task -> viewModel.setTaskCompletion(task.id, false) },
+    )
+}
+
+@Composable
+private fun ProfileRoute(
+    state: GrittoAppState,
+    navigator: Navigator,
+    padding: PaddingValues,
+) {
+    val viewModel = viewModel(modelClass = ProfileViewModel::class, keys = listOf("profile")) {
+        ProfileViewModel(state.repository, onProfileLoaded = state::updateProfile)
+    }
+    val uiState by viewModel.uiState.collectAsState()
+    LaunchedEffect(state.sessionToken) {
+        if (state.sessionToken != null) {
+            viewModel.refresh()
+        }
+    }
+
+    ProfileScreen(
+        uiState = uiState,
+        contentPadding = padding,
+        onRetry = { viewModel.refresh() },
+        onEditHours = { navigator.navigate(GrittoNavRoutes.ProfileEdit) },
+        onSignOut = { state.signOut() },
+    )
+}
+
 private fun appendChatMessage(
-    state: GrittoState,
+    state: GrittoAppState,
     userMessage: String,
 ) {
     if (userMessage.isBlank()) return

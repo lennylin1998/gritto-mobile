@@ -9,9 +9,11 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
@@ -27,6 +29,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.gritto.app.theme.GrittoTheme
 import com.gritto.app.ui.components.GoalList
@@ -44,6 +47,9 @@ fun HomeScreen(
     goals: List<GoalUiModel>,
     contentPadding: PaddingValues,
     modifier: Modifier = Modifier,
+    isLoading: Boolean = false,
+    errorMessage: String? = null,
+    onRetry: () -> Unit = {},
     onTaskClick: (TaskUiModel) -> Unit = {},
     onTaskChecked: (TaskUiModel) -> Unit = {},
     onTaskCompletionUndo: (TaskUiModel) -> Unit = {},
@@ -98,66 +104,104 @@ fun HomeScreen(
     Box(
         modifier = modifier.fillMaxSize(),
     ) {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(
-                    start = 20.dp,
-                    end = 20.dp,
-                    top = contentPadding.calculateTopPadding() + 16.dp,
-                    bottom = contentPadding.calculateBottomPadding() + 16.dp,
-                ),
-            verticalArrangement = Arrangement.spacedBy(24.dp),
-        ) {
-            Column(
-                verticalArrangement = Arrangement.spacedBy(16.dp),
-            ) {
-                Text(
-                    text = "Task List",
-                    style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
-                    color = MaterialTheme.colorScheme.onSurface,
-                )
+        when {
+            isLoading -> {
                 Box(
                     modifier = Modifier
-                        .fillMaxWidth()
-                        .height(320.dp)  // ← Constrain TaskList height
+                        .fillMaxSize()
+                        .padding(contentPadding),
+                    contentAlignment = Alignment.Center,
                 ) {
-                    TaskListsCarousel(
-                        taskLists = currentTaskLists,
-                        modifier = Modifier.fillMaxWidth(),
-                        onTaskChecked = { list, task ->
-                            handleTaskCompletion(list, task)
-                        },
-                        onTaskClick = { _, task ->
-                            onTaskClick(task)
-                        },
-                    )
+                    CircularProgressIndicator()
                 }
             }
-            Column(
-                modifier = Modifier.weight(1f),
-            ) {
-                Text(
-                    text = "Goals",
-                    style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
-                    color = MaterialTheme.colorScheme.onSurface,
-                )
-                Spacer(modifier = Modifier.height(16.dp))
-                Box(
+
+            errorMessage != null -> {
+                Column(
                     modifier = Modifier
-                        .fillMaxWidth()
-                        .weight(1f),
+                        .fillMaxSize()
+                        .padding(contentPadding)
+                        .padding(24.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(16.dp),
                 ) {
-                    if (goalListState.items.isEmpty()) {
-                        GoalEmptyState(
-                            modifier = Modifier.align(Alignment.TopStart),
+                    Text(
+                        text = "We couldn’t load your dashboard.",
+                        style = MaterialTheme.typography.titleMedium,
+                    )
+                    Text(
+                        text = errorMessage,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        textAlign = TextAlign.Center,
+                    )
+                    Button(onClick = onRetry) {
+                        Text("Retry")
+                    }
+                }
+            }
+
+            else -> Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(
+                        start = 20.dp,
+                        end = 20.dp,
+                        top = contentPadding.calculateTopPadding() + 16.dp,
+                        bottom = contentPadding.calculateBottomPadding() + 16.dp,
+                    ),
+                verticalArrangement = Arrangement.spacedBy(24.dp),
+            ) {
+                Column(
+                    verticalArrangement = Arrangement.spacedBy(16.dp),
+                ) {
+                    Text(
+                        text = "Task List",
+                        style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
+                        color = MaterialTheme.colorScheme.onSurface,
+                    )
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(320.dp)  // ← Constrain TaskList height
+                    ) {
+                        TaskListsCarousel(
+                            taskLists = currentTaskLists,
+                            modifier = Modifier.fillMaxWidth(),
+                            onTaskChecked = { list, task ->
+                                handleTaskCompletion(list, task)
+                            },
+                            onTaskClick = { _, task ->
+                                onTaskClick(task)
+                            },
                         )
-                    } else {
-                        GoalList(
-                            state = goalListState,
-                            modifier = Modifier.fillMaxSize(),
-                            onGoalClick = onGoalClick,
-                        )
+                    }
+                }
+                Column(
+                    modifier = Modifier.weight(1f),
+                ) {
+                    Text(
+                        text = "Goals",
+                        style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
+                        color = MaterialTheme.colorScheme.onSurface,
+                    )
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .weight(1f),
+                    ) {
+                        if (goalListState.items.isEmpty()) {
+                            GoalEmptyState(
+                                modifier = Modifier.align(Alignment.TopStart),
+                            )
+                        } else {
+                            GoalList(
+                                state = goalListState,
+                                modifier = Modifier.fillMaxSize(),
+                                onGoalClick = onGoalClick,
+                            )
+                        }
                     }
                 }
             }

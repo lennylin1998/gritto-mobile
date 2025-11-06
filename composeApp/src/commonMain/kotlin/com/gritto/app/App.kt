@@ -1,7 +1,15 @@
 package com.gritto.app
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
+import com.gritto.app.data.network.ApiResult
+import com.gritto.app.data.remote.model.ProfileUpdateRequestDto
+import com.gritto.app.data.remote.model.toProfileInfo
+import com.gritto.app.model.SampleData
 import com.gritto.app.navigation.GrittoNavRoutes
 import com.gritto.app.theme.GrittoTheme
 import com.gritto.app.ui.GrittoApp
@@ -19,6 +27,7 @@ import moe.tlaster.precompose.PreComposeApp
 import moe.tlaster.precompose.navigation.NavHost
 import moe.tlaster.precompose.navigation.path
 import moe.tlaster.precompose.navigation.rememberNavigator
+import kotlinx.coroutines.launch
 
 @Composable
 fun App() {
@@ -82,12 +91,38 @@ fun App() {
                     )
                 }
                 scene(route = GrittoNavRoutes.ProfileEdit) {
+                    val coroutineScope = rememberCoroutineScope()
+                    var isSaving by remember { mutableStateOf(false) }
+                    var errorMessage by remember { mutableStateOf<String?>(null) }
+                    val profile = appState.profile ?: SampleData.profile
+
                     ProfileEditScreen(
-                        profile = appState.profile,
-                        navigator = navigator,
+                        profile = profile,
+                        isSaving = isSaving,
+                        errorMessage = errorMessage,
                         onSave = { hours ->
-                            appState.profile = appState.profile.copy(availableHoursPerWeek = hours)
+                            isSaving = true
+                            errorMessage = null
+                            coroutineScope.launch {
+                                when (val result = appState.repository.updateProfile(
+                                    ProfileUpdateRequestDto(
+                                        availableHoursPerWeek = hours,
+                                    ),
+                                )) {
+                                    is ApiResult.Success -> {
+                                        val updated = result.value.data.toProfileInfo()
+                                        appState.updateProfile(updated)
+                                        isSaving = false
+                                        navigator.goBack()
+                                    }
+                                    is ApiResult.Error -> {
+                                        errorMessage = result.message
+                                        isSaving = false
+                                    }
+                                }
+                            }
                         },
+                        onCancel = { navigator.goBack() },
                     )
                 }
             }

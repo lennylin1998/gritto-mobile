@@ -68,6 +68,8 @@ data class ProfileInfo(
     val name: String,
     val email: String,
     val availableHoursPerWeek: Int,
+    val profileImageUrl: String?,
+    val timezone: String?
 )
 
 enum class GoalTreeNodeType {
@@ -380,6 +382,8 @@ object SampleData {
         name = "Alex Rivers",
         email = "alex@gritto.app",
         availableHoursPerWeek = 35,
+        profileImageUrl = "http://10.194.233.51:3000",
+        timezone = "CST",
     )
 
     val initialChat = listOf(
