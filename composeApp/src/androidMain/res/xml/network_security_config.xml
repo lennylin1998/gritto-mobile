@@ -3,5 +3,6 @@
     <domain-config cleartextTrafficPermitted="true">
         <!-- Allow all local connections -->
         <domain includeSubdomains="true">10.194.233.51</domain>
+        <domain includeSubdomains="true">100.70.70.2</domain>
     </domain-config>
 </network-security-config>

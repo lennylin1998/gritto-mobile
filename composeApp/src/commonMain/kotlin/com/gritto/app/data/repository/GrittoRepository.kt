@@ -17,6 +17,7 @@ import com.gritto.app.data.remote.model.TaskSummaryDto
 import com.gritto.app.data.remote.model.TaskUpdateRequestDto
 import io.ktor.client.request.parameter
 import kotlinx.datetime.LocalDate
+import kotlinx.serialization.Serializable
 
 interface GrittoRepository {
     suspend fun loginWithGoogle(idToken: String): ApiResult<AuthResponseDto>

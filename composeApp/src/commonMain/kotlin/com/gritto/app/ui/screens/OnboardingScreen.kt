@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.systemBarsPadding
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Button
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -28,8 +29,11 @@ import androidx.compose.ui.unit.sp
 
 @Composable
 fun OnboardingScreen(
-    onSignIn: () -> Unit,
-    modifier: Modifier = Modifier
+    googleSignInAvailable: Boolean,
+    onGoogleSignInClick: () -> Unit,
+    isLoading: Boolean,
+    errorMessage: String?,
+    modifier: Modifier = Modifier,
 ) {
     Box(
         modifier = modifier
@@ -62,22 +66,44 @@ fun OnboardingScreen(
                 textAlign = TextAlign.Center
             )
             Spacer(modifier = Modifier.height(8.dp))
+            if (errorMessage != null) {
+                Text(
+                    text = errorMessage,
+                    style = MaterialTheme.typography.bodySmall.copy(color = Color.White),
+                    textAlign = TextAlign.Center,
+                )
+            }
             Surface(
                 shadowElevation = 10.dp,
                 shape = MaterialTheme.shapes.large
             ) {
                 Button(
-                    onClick = onSignIn,
+                    onClick = onGoogleSignInClick,
                     modifier = Modifier.padding(horizontal = 4.dp),
-                    shape = MaterialTheme.shapes.medium
+                    shape = MaterialTheme.shapes.medium,
+                    enabled = googleSignInAvailable && !isLoading,
                 ) {
                     GoogleGlyph()
                     Spacer(modifier = Modifier.width(12.dp))
                     Text(
-                        text = "Continue with Google",
+                        text = when {
+                            isLoading -> "Connecting…"
+                            googleSignInAvailable -> "Continue with Google"
+                            else -> "Google Sign-In Unavailable"
+                        },
                         style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.SemiBold)
                     )
                 }
+            }
+            if (!googleSignInAvailable) {
+                Text(
+                    text = "Google Sign-In isn’t available on this platform yet.",
+                    style = MaterialTheme.typography.bodySmall.copy(color = Color.White.copy(alpha = 0.8f)),
+                    textAlign = TextAlign.Center,
+                )
+            }
+            if (isLoading) {
+                CircularProgressIndicator(color = Color.White)
             }
         }
         Text(

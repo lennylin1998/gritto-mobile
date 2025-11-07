@@ -11,7 +11,9 @@ import io.ktor.client.request.post
 import io.ktor.client.request.put
 import io.ktor.client.request.setBody
 import io.ktor.client.statement.HttpResponse
+import io.ktor.http.ContentType
 import io.ktor.http.URLBuilder
+import io.ktor.http.contentType
 import io.ktor.http.path
 import kotlinx.serialization.Serializable
 import io.ktor.http.encodedPath
@@ -40,6 +42,7 @@ class ApiClient(
     ): ApiResult<Res> = execute {
         httpClient.post {
             setup(path, this)
+            contentType(ContentType.Application.Json)
             setBody(body)
             block()
         }

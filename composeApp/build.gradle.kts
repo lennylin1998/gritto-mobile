@@ -30,6 +30,7 @@ kotlin {
         androidMain.dependencies {
             implementation(compose.preview)
             implementation(libs.androidx.activity.compose)
+//            implementation(libs.googleid)
         }
         commonMain.dependencies {
             implementation(compose.runtime)
@@ -73,6 +74,9 @@ android {
         versionName = "1.0"
         android.buildFeatures.buildConfig = true
         buildConfigField("String", "API_BASE_URL", "\"${project.properties["API_BASE_URL"]}\"")
+
+        val googleClientId = project.findProperty("GOOGLE_WEB_CLIENT_ID") as? String ?: ""
+        buildConfigField("String", "GOOGLE_WEB_CLIENT_ID", "\"$googleClientId\"")
     }
     packaging {
         resources {
@@ -87,6 +91,11 @@ android {
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
+    }
+    dependencies {
+        implementation("androidx.credentials:credentials:1.6.0-beta03")
+        implementation("androidx.credentials:credentials-play-services-auth:1.6.0-beta03")
+        implementation("com.google.android.libraries.identity.googleid:googleid:<latest version>")
     }
 }
 

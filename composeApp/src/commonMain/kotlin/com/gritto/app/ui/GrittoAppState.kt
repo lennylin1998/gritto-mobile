@@ -67,6 +67,7 @@ fun rememberGrittoState(): GrittoAppState {
         ApiClient(
             httpClient = httpClient,
             baseUrl = "http://10.194.233.51:8080",
+//            baseUrl = "http://100.70.70.2:8080",
             tokenProvider = { tokenHolder.token },
         )
     }
