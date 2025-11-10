@@ -1,4 +1,9 @@
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+import java.util.Properties
+
+val localProps = Properties()
+val localFile = rootProject.file("local.properties")
+if (localFile.exists()) localFile.inputStream().use { localProps.load(it) }
 
 plugins {
     alias(libs.plugins.kotlinMultiplatform)
@@ -89,6 +94,28 @@ android {
         implementation("androidx.credentials:credentials:1.6.0-beta03")
         implementation("androidx.credentials:credentials-play-services-auth:1.6.0-beta03")
         implementation("com.google.android.libraries.identity.googleid:googleid:<latest version>")
+    }
+    signingConfigs {
+        create("release") {
+            storeFile = file("../release-key.jks")  // adjust path if needed
+            storePassword = localProps.getProperty("RELEASE_STORE_PASSWORD") as String?
+            keyAlias = localProps.getProperty("RELEASE_KEY_ALIAS") as String?
+            keyPassword = localProps.getProperty("RELEASE_KEY_PASSWORD") as String?
+        }
+    }
+    buildTypes {
+        getByName("release") {
+            isMinifyEnabled = false
+            signingConfig = signingConfigs.getByName("release")
+            applicationVariants.all {
+                outputs.all {
+                    val appName = "gritto"
+                    val versionName = versionName
+                    val outputFileName = "${appName}-${versionName}-release.apk"
+                    (this as com.android.build.gradle.internal.api.BaseVariantOutputImpl).outputFileName = outputFileName
+                }
+            }
+        }
     }
 }
 
