@@ -15,7 +15,7 @@
     "title": "string",
     "description": "string",
     "context": "string (optional)",
-    "minHoursPerWeek": "number (optional)",
+    "hoursPerWeek": "number (optional)",
     "priority": "number",
     "color": "number",
     "status": "enum('active', 'completed')",
@@ -78,7 +78,7 @@
     "goal": {
       "title": "string",
       "description": "string (optional)",
-      "context": "string (optional)",
+      "hoursPerWeek": "number",
       "milestones": [
         {
           "title": "string",

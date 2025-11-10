@@ -96,7 +96,7 @@ data class GoalDetailDto(
     val color: Long? = null,
     val status: String,
     val priority: Int,
-    val minHoursPerWeek: Double,
+    val hoursPerWeek: Double,
     val milestones: List<String> = emptyList(),
     val createdAt: String? = null,
     val updatedAt: String? = null,
@@ -195,7 +195,7 @@ data class ChatGoalPreviewGoalDto(
     val description: String? = null,
     val context: String? = null,
     val priority: Int? = null,
-    val minHoursPerWeek: Double? = null,
+    val hoursPerWeek: Double? = null,
     val color: Long? = null,
 )
 
@@ -255,7 +255,7 @@ data class GoalDraftDto(
     val description: String? = null,
     val context: String? = null,
     val priority: Int? = null,
-    val minHoursPerWeek: Double? = null,
+    val hoursPerWeek: Double? = null,
     val color: Long? = null,
     val milestones: List<GoalDraftMilestoneDto> = emptyList(),
 )
