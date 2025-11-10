@@ -40,21 +40,20 @@ import androidx.compose.ui.unit.dp
 import com.gritto.app.data.repository.GrittoRepository
 import com.gritto.app.model.GoalTreeNode
 import com.gritto.app.model.GoalTreeNodeType
-import com.gritto.app.model.SampleData
 import com.gritto.app.navigation.GrittoNavRoutes
 import com.gritto.app.ui.components.MissingEntityMessage
 import com.gritto.app.ui.viewmodel.GoalTreePreviewViewModel
+import com.gritto.app.ui.viewmodel.GoalTreeViewModel
 import moe.tlaster.precompose.navigation.Navigator
 import moe.tlaster.precompose.viewmodel.viewModel
 
 @Composable
 fun GoalTreeScreen(
     goalId: String?,
+    repository: GrittoRepository,
     navigator: Navigator,
 ) {
-    val root = remember(goalId) { SampleData.goalTreeByGoal[goalId] }
-
-    if (root == null) {
+    if (goalId.isNullOrBlank()) {
         MissingEntityScaffold(
             title = "Goal Tree",
             onBack = navigator::goBack,
@@ -62,19 +61,69 @@ fun GoalTreeScreen(
         )
         return
     }
+    val viewModel = viewModel(modelClass = GoalTreeViewModel::class, keys = listOf(goalId)) {
+        GoalTreeViewModel(
+            repository = repository,
+            goalId = goalId,
+        )
+    }
+    val uiState by viewModel.uiState.collectAsState()
 
-    GoalTreeContent(
-        title = root.title,
-        node = root,
-        isPreview = false,
-        onBack = navigator::goBack,
-        onAddGoal = { navigator.navigate(GrittoNavRoutes.goalEdit(root.id)) },
-        onGoalTapped = { navigator.navigate(GrittoNavRoutes.goal(it)) },
-        onGoalPlusTapped = { navigator.navigate(GrittoNavRoutes.milestoneEdit("milestone-1")) },
-        onMilestoneTapped = { navigator.navigate(GrittoNavRoutes.milestone(it)) },
-        onMilestonePlusTapped = { navigator.navigate(GrittoNavRoutes.taskEdit("task-1")) },
-        onTaskTapped = { navigator.navigate(GrittoNavRoutes.task(it)) },
-    )
+    when {
+        uiState.isLoading -> {
+            GoalTreeStateScaffold(
+                title = "Goal Tree",
+                isPreview = false,
+                onBack = navigator::goBack,
+            ) {
+                CircularProgressIndicator()
+            }
+        }
+        uiState.error != null -> {
+            GoalTreeStateScaffold(
+                title = "Goal Tree",
+                isPreview = false,
+                onBack = navigator::goBack,
+            ) {
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                ) {
+                    MissingEntityMessage(
+                        label = "We couldn't load this goal tree",
+                        supportingText = uiState.error ?: "Something went wrong.",
+                    )
+                    Button(onClick = { viewModel.retry() }) {
+                        Text("Retry")
+                    }
+                }
+            }
+        }
+        uiState.node != null -> {
+            val root = uiState.node
+            GoalTreeContent(
+                title = root!!.title,
+                node = root,
+                isPreview = false,
+                onBack = navigator::goBack,
+                onAddGoal = { navigator.navigate(GrittoNavRoutes.goalEdit(root.id)) },
+                onGoalTapped = { navigator.navigate(GrittoNavRoutes.goal(it)) },
+                onGoalPlusTapped = { navigator.navigate(GrittoNavRoutes.milestoneEdit(it)) },
+                onMilestoneTapped = { navigator.navigate(GrittoNavRoutes.milestone(it)) },
+                onMilestonePlusTapped = { navigator.navigate(GrittoNavRoutes.taskEdit(it)) },
+                onTaskTapped = { navigator.navigate(GrittoNavRoutes.task(it)) },
+            )
+        }
+        else -> {
+            GoalTreeStateScaffold(
+                title = "Goal Tree",
+                isPreview = false,
+                onBack = navigator::goBack,
+            ) {
+                CircularProgressIndicator()
+            }
+        }
+    }
 }
 
 @Composable
@@ -104,16 +153,18 @@ fun GoalTreePreviewScreen(
 
     when {
         uiState.isLoading -> {
-            GoalTreePreviewStateScaffold(
+            GoalTreeStateScaffold(
                 title = "Goal Preview",
+                isPreview = true,
                 onBack = navigator::goBack,
             ) {
                 CircularProgressIndicator()
             }
         }
         uiState.error != null -> {
-            GoalTreePreviewStateScaffold(
+            GoalTreeStateScaffold(
                 title = "Goal Preview",
+                isPreview = true,
                 onBack = navigator::goBack,
             ) {
                 Column(
@@ -146,8 +197,9 @@ fun GoalTreePreviewScreen(
             )
         }
         else -> {
-            GoalTreePreviewStateScaffold(
+            GoalTreeStateScaffold(
                 title = "Goal Preview",
+                isPreview = true,
                 onBack = navigator::goBack,
             ) {
                 MissingEntityMessage(
@@ -257,8 +309,9 @@ private fun GoalTreeContent(
 }
 
 @Composable
-private fun GoalTreePreviewStateScaffold(
+private fun GoalTreeStateScaffold(
     title: String,
+    isPreview: Boolean,
     onBack: () -> Unit,
     content: @Composable () -> Unit,
 ) {
@@ -269,7 +322,9 @@ private fun GoalTreePreviewStateScaffold(
                 title = { Text(title) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.Filled.Close, contentDescription = "Close preview")
+                        val icon = if (isPreview) Icons.Filled.Close else Icons.Filled.ArrowBack
+                        val description = if (isPreview) "Close preview" else "Back"
+                        Icon(icon, contentDescription = description)
                     }
                 },
             )

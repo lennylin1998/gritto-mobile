@@ -72,6 +72,7 @@ fun App() {
                 scene(route = GrittoNavRoutes.GoalTree) { backStackEntry ->
                     GoalTreeScreen(
                         goalId = backStackEntry.path<String>("goalId"),
+                        repository = appState.repository,
                         navigator = navigator,
                     )
                 }

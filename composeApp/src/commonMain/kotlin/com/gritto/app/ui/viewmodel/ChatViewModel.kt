@@ -182,7 +182,7 @@ class ChatViewModel(
 private fun GoalPreviewPayloadDto.toChatGoalPreviewRequest(): ChatGoalPreviewRequestDto? {
     val plan = data ?: return null
     val goal = plan.goal ?: return null
-    val milestoneDrafts = plan.goal.milestones.map { milestone ->
+    val milestoneDrafts = plan.milestones.map { milestone ->
         MilestonePreviewDto(
             title = milestone.title,
             description = milestone.description,
@@ -201,8 +201,8 @@ private fun GoalPreviewPayloadDto.toChatGoalPreviewRequest(): ChatGoalPreviewReq
             title = goal.title,
             description = goal.description,
             hoursPerWeek = goal.hoursPerWeek,
-            milestones = milestoneDrafts,
         ),
+        milestones = milestoneDrafts,
         iteration = plan.iteration,
     )
 }

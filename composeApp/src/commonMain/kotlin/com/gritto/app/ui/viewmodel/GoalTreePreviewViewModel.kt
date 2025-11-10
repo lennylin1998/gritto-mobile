@@ -1,7 +1,6 @@
 package com.gritto.app.ui.viewmodel
 
 import com.gritto.app.data.network.ApiResult
-import com.gritto.app.data.remote.model.GoalPreviewDataDto
 import com.gritto.app.data.remote.model.GoalPreviewPayloadDto
 import com.gritto.app.data.repository.GrittoRepository
 import com.gritto.app.model.GoalTreeNode
@@ -12,7 +11,6 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import moe.tlaster.precompose.viewmodel.ViewModel
 import moe.tlaster.precompose.viewmodel.viewModelScope
-import com.gritto.app.data.remote.model.GoalPreviewDto
 import com.gritto.app.data.remote.model.MilestonePreviewDto
 import com.gritto.app.data.remote.model.TaskPreviewDto
 
@@ -69,20 +67,14 @@ class GoalTreePreviewViewModel(
 }
 
 private fun GoalPreviewPayloadDto.toGoalTreeNode(): GoalTreeNode? {
-    return data!!.toGoalTreeNode()
-}
-
-private fun GoalPreviewDataDto.toGoalTreeNode(): GoalTreeNode {
-    return goal!!.toGoalTreeNode()
-}
-
-private fun GoalPreviewDto.toGoalTreeNode(): GoalTreeNode {
+    val plan = data ?: return null
+    val goal = plan.goal ?: return null
     val subtitle = buildList {
-        description?.takeIf { it.isNotBlank() }?.let { add(it) }
-        hoursPerWeek?.let { add("$it h/week") }
+        goal.description?.takeIf { it.isNotBlank() }?.let { add(it) }
+        goal.hoursPerWeek?.let { add("$it h/week") }
     }.takeIf { it.isNotEmpty() }?.joinToString(" • ")
 
-    val milestoneNodes = milestones
+    val milestoneNodes = plan.milestones
         .takeIf { it.isNotEmpty() }
         ?.mapIndexed { index, milestone ->
             milestone.toGoalTreeNode(index)
@@ -90,8 +82,8 @@ private fun GoalPreviewDto.toGoalTreeNode(): GoalTreeNode {
         ?: emptyList()
 
     return GoalTreeNode(
-        id = "0",
-        title = title,
+        id = id ?: "preview-root",
+        title = goal.title,
         subtitle = subtitle,
         type = GoalTreeNodeType.Goal,
         children = milestoneNodes,
