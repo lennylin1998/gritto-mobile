@@ -55,6 +55,7 @@ class ApiClient(
     ): ApiResult<Res> = execute {
         httpClient.put {
             setup(path, this)
+            contentType(ContentType.Application.Json)
             setBody(body)
             block()
         }
@@ -67,6 +68,7 @@ class ApiClient(
     ): ApiResult<Res> = execute {
         httpClient.patch {
             setup(path, this)
+            contentType(ContentType.Application.Json)
             setBody(body)
             block()
         }

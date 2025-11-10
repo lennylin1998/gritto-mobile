@@ -8,7 +8,7 @@ import io.ktor.client.plugins.logging.Logger
 import io.ktor.client.plugins.logging.Logging
 import io.ktor.serialization.kotlinx.json.json
 import kotlinx.serialization.json.Json
-
+import io.ktor.client.plugins.HttpTimeout
 internal fun provideJson(): Json = Json {
     ignoreUnknownKeys = true
     isLenient = true
@@ -29,6 +29,11 @@ internal fun createHttpClient(
                 println("GrittoHttpClient: $message")
             }
         }
+    }
+    install(HttpTimeout) {
+        connectTimeoutMillis = 5_000
+        socketTimeoutMillis = 100_000
+        requestTimeoutMillis = 120_000
     }
 }
 

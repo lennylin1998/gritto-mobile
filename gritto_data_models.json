@@ -14,8 +14,8 @@
     "userId": "string (reference to User)",
     "title": "string",
     "description": "string",
-    "context": "string",
-    "minHoursPerWeek": "number",
+    "context": "string (optional)",
+    "minHoursPerWeek": "number (optional)",
     "priority": "number",
     "color": "number",
     "status": "enum('active', 'completed')",
@@ -28,11 +28,9 @@
   "Milestone": {
     "id": "string",
     "goalId": "string (reference to Goal)",
-    "parentMilestoneId": "string (optional, reference if sub-milestone)",
     "title": "string",
     "description": "string (optional)",
     "status": "enum('blocked', 'in_progress', 'finished')",
-    "milestones": "string[]",
     "tasks": "string[]",
     "createdAt": "Timestamp",
     "updatedAt": "Timestamp"
@@ -51,8 +49,7 @@
   "Chat": {
     "id": "string",
     "userId": "string (reference to User)",
-    "goalPreviewId": "string (optional, reference to GoalPreview)",
-    "sessionId": "string (optional)",
+    "sessionId": "string",
     "entries": [
       {
         "sender": "enum('user', 'agent')",
@@ -62,17 +59,26 @@
     ],
     "createdAt": "Timestamp"
   },
+  "SessionState": {
+    "id": "string",
+    "userId": "string (reference to User)",
+    "step": "enum('plan_generated', 'plan_iteration', 'finalized')",
+    "iteration": "number",
+    "sessionActive": "boolean",
+    "goalPreviewId": "string (reference to GoalPreview, optional)",
+    "state": "enum('plan_generated', 'finalized')",
+    "detectedConsent": "boolean (optional)",
+    "createdAt": "Timestamp",
+    "updatedAt": "Timestamp"
+  },
   "GoalPreview": {
     "id": "string",
     "userId": "string (reference to User)",
     "sessionId": "string (reference to Chat session)",
-    "goalDraft": {
+    "goal": {
       "title": "string",
       "description": "string (optional)",
       "context": "string (optional)",
-      "priority": "number (optional)",
-      "minHoursPerWeek": "number (optional)",
-      "color": "number (optional)",
       "milestones": [
         {
           "title": "string",
@@ -81,8 +87,8 @@
             {
               "title": "string",
               "description": "string (optional)",
-              "date": "Timestamp (optional)",
-              "estimatedHours": "number (optional)"
+              "date": "Timestamp",
+              "estimatedHours": "number"
             }
           ]
         }

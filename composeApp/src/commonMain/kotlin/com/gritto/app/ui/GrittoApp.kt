@@ -11,7 +11,6 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import com.gritto.app.model.ChatMessage
 import com.gritto.app.navigation.GrittoNavRoutes
 import com.gritto.app.platform.platformGoogleClientId
 import com.gritto.app.platform.rememberGoogleAuthLauncher
@@ -23,6 +22,7 @@ import com.gritto.app.ui.screens.OnboardingScreen
 import com.gritto.app.ui.screens.ProfileScreen
 import com.gritto.app.ui.viewmodel.HomeViewModel
 import com.gritto.app.ui.viewmodel.OnboardingViewModel
+import com.gritto.app.ui.viewmodel.ChatViewModel
 import com.gritto.app.ui.viewmodel.ProfileViewModel
 import moe.tlaster.precompose.navigation.Navigator
 import moe.tlaster.precompose.viewmodel.viewModel
@@ -58,17 +58,10 @@ fun GrittoApp(
                 padding = padding,
             )
 
-            MainNavDestination.Chat -> ChatScreen(
-                messages = state.chatHistory,
-                onSendMessage = { text ->
-                    appendChatMessage(
-                        state = state,
-                        userMessage = text,
-                    )
-                },
-                onBack = { state.selectedDestination = MainNavDestination.Home },
-                onShowGoalPreview = { navigator.navigate(GrittoNavRoutes.GoalTreePreview) },
-                contentPadding = padding,
+            MainNavDestination.Chat -> ChatRoute(
+                state = state,
+                navigator = navigator,
+                padding = padding,
             )
 
             MainNavDestination.Profile -> ProfileRoute(
@@ -142,6 +135,42 @@ private fun ProfileRoute(
 }
 
 @Composable
+private fun ChatRoute(
+    state: GrittoAppState,
+    navigator: Navigator,
+    padding: PaddingValues,
+) {
+    val viewModel = viewModel(modelClass = ChatViewModel::class) {
+        ChatViewModel(
+            repository = state.repository,
+            userIdProvider = { state.userId },
+        )
+    }
+    val uiState by viewModel.uiState.collectAsState()
+
+    LaunchedEffect(state.sessionToken, state.userId) {
+        if (state.sessionToken != null) {
+            viewModel.ensureSession()
+        }
+    }
+
+    ChatScreen(
+        uiState = uiState,
+        onSendMessage = { message ->
+            viewModel.sendMessage(message)
+        },
+        onRetry = { viewModel.retry() },
+        onBack = { state.selectedDestination = MainNavDestination.Home },
+        onShowGoalPreview = {
+            uiState.goalPreviewId?.let { previewId ->
+                navigator.navigate(GrittoNavRoutes.goalTreePreview(previewId))
+            }
+        },
+        contentPadding = padding,
+    )
+}
+
+@Composable
 private fun OnboardingRoute(
     state: GrittoAppState,
     modifier: Modifier,
@@ -185,28 +214,4 @@ private fun OnboardingRoute(
         errorMessage = googleError ?: uiState.error,
         modifier = modifier,
     )
-}
-
-private fun appendChatMessage(
-    state: GrittoAppState,
-    userMessage: String,
-) {
-    if (userMessage.isBlank()) return
-    val trimmed = userMessage.trim()
-    val userId = "chat-${++state.messageCounter}"
-    state.chatHistory.add(ChatMessage.User(id = userId, text = trimmed))
-
-    val agentReply = buildAgentReply(trimmed)
-    val agentId = "chat-${++state.messageCounter}"
-    state.chatHistory.add(ChatMessage.Agent(id = agentId, text = agentReply))
-}
-
-private fun buildAgentReply(message: String): String {
-    val encouragement = when {
-        message.contains("done", ignoreCase = true) -> "Nice win. Capture what helped you succeed so we can repeat it."
-        message.contains("stuck", ignoreCase = true) -> "Thanks for being honest. Let's pick one tiny step you can ship today."
-        message.length > 120 -> "That's a thorough reflection. Summarize the single action you'll take next."
-        else -> "Got it. What single next step keeps you aligned with your goal?"
-    }
-    return encouragement
 }

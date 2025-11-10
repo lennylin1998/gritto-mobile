@@ -75,8 +75,11 @@ fun App() {
                         navigator = navigator,
                     )
                 }
-                scene(route = GrittoNavRoutes.GoalTreePreview) {
-                    GoalTreePreviewScreen(navigator = navigator)
+                scene(route = GrittoNavRoutes.GoalTreePreview) { backStackEntry ->
+                    GoalTreePreviewScreen(
+                        goalPreviewId = backStackEntry.path("goalPreviewId"),
+                        navigator = navigator,
+                    )
                 }
                 scene(route = GrittoNavRoutes.Milestone) { backStackEntry ->
                     MilestoneScreen(

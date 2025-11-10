@@ -71,11 +71,20 @@ fun GoalTreeScreen(
 
 @Composable
 fun GoalTreePreviewScreen(
+    goalPreviewId: String?,
     navigator: Navigator,
 ) {
-    val preview = remember { SampleData.goalTreePreview }
+    if (goalPreviewId.isNullOrBlank()) {
+        MissingEntityScaffold(
+            title = "Goal Preview",
+            onBack = navigator::goBack,
+            message = "We couldn’t find that goal preview.",
+        )
+        return
+    }
+    val preview = remember(goalPreviewId) { SampleData.goalTreePreview }
     GoalTreeContent(
-        title = "Goal Tree Preview",
+        title = "Goal Preview",
         node = preview,
         isPreview = true,
         onBack = navigator::goBack,

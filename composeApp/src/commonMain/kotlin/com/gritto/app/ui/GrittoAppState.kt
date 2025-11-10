@@ -27,30 +27,33 @@ class GrittoAppState internal constructor(
     val repository: GrittoRepository,
 ) {
     var isSignedIn by mutableStateOf(false)
-
+ 
     var selectedDestination by mutableStateOf(MainNavDestination.Home)
-
+ 
     val chatHistory = mutableStateListOf<ChatMessage>().apply { addAll(SampleData.initialChat) }
     var messageCounter by mutableStateOf(chatHistory.size)
-
+ 
     var profile by mutableStateOf<ProfileInfo?>(SampleData.profile)
         private set
-
+    var userId by mutableStateOf<String?>(null)
+ 
     val sessionToken: String? get() = tokenHolder.token
-
+ 
     fun updateAuth(authResponse: AuthResponseDto) {
         tokenHolder.token = authResponse.data.token
         profile = authResponse.data.user.toProfileInfo()
+        userId = authResponse.data.user.id
         isSignedIn = true
     }
-
+ 
     fun updateProfile(profileInfo: ProfileInfo) {
         profile = profileInfo
     }
-
+ 
     fun signOut() {
         tokenHolder.token = null
         profile = null
+        userId = null
         isSignedIn = false
         selectedDestination = MainNavDestination.Home
     }
@@ -66,8 +69,8 @@ fun rememberGrittoState(): GrittoAppState {
     val apiClient = remember {
         ApiClient(
             httpClient = httpClient,
-            baseUrl = "http://10.194.233.51:8080",
-//            baseUrl = "http://100.70.70.2:8080",
+//            baseUrl = "http://10.194.233.51:8080",
+            baseUrl = "http://100.70.70.2:8080",
             tokenProvider = { tokenHolder.token },
         )
     }

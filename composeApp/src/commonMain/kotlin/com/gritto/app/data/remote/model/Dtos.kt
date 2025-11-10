@@ -1,6 +1,5 @@
 package com.gritto.app.data.remote.model
 
-import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 @Serializable
@@ -29,6 +28,7 @@ data class ProfileDto(
 @Serializable
 data class ActiveGoalDto(
     val id: String,
+    val userId: String? = null,
     val title: String,
     val priority: Int,
     val color: Long,
@@ -39,6 +39,7 @@ data class ActiveGoalDto(
 @Serializable
 data class TaskSummaryDto(
     val id: String,
+    val goalId: String,
     val milestoneId: String,
     val title: String,
     val description: String? = null,
@@ -46,6 +47,8 @@ data class TaskSummaryDto(
     val estimatedHours: Double,
     val status: String? = null,
     val done: Boolean? = null,
+    val createdAt: String? = null,
+    val updatedAt: String? = null,
 )
 
 @Serializable
@@ -56,6 +59,7 @@ data class TaskDetailResponseDto(
 @Serializable
 data class TaskDetailDto(
     val id: String,
+    val goalId: String? = null,
     val milestoneId: String? = null,
     val title: String,
     val description: String? = null,
@@ -83,20 +87,30 @@ data class GoalDetailResponseDto(
 @Serializable
 data class GoalDetailDto(
     val id: String,
+    val userId: String,
     val title: String,
     val description: String? = null,
+    val context: String? = null,
     val startDate: String? = null,
+    val targetDate: String? = null,
     val color: Long? = null,
-    val status: String? = null,
-    val priority: Int? = null,
-    val minHoursPerWeek: Double? = null,
+    val status: String,
+    val priority: Int,
+    val minHoursPerWeek: Double,
+    val milestones: List<String> = emptyList(),
+    val createdAt: String? = null,
+    val updatedAt: String? = null,
 )
 
 @Serializable
 data class MilestoneSummaryDto(
     val id: String,
+    val goalId: String,
+    val parentMilestoneId: String? = null,
     val title: String,
     val status: String,
+    val createdAt: String? = null,
+    val updatedAt: String? = null,
 )
 
 @Serializable
@@ -112,9 +126,15 @@ data class MilestoneDetailResponseDto(
 @Serializable
 data class MilestoneDetailDto(
     val id: String,
+    val goalId: String,
+    val parentMilestoneId: String? = null,
     val title: String,
     val description: String? = null,
     val status: String,
+    val milestones: List<String> = emptyList(),
+    val tasks: List<String> = emptyList(),
+    val createdAt: String? = null,
+    val updatedAt: String? = null,
 )
 
 @Serializable
@@ -138,6 +158,10 @@ data class ChatSessionDto(
     val iteration: Int? = null,
     val goalPreviewId: String? = null,
     val context: ChatContextDto? = null,
+    val sessionActive: Boolean? = null,
+    val chat: ChatDto? = null,
+    val createdAt: String? = null,
+    val updatedAt: String? = null,
 )
 
 @Serializable
@@ -147,13 +171,30 @@ data class ChatContextDto(
 )
 
 @Serializable
+data class ChatGoalPreviewRequestDto(
+    val goal: ChatGoalPreviewGoalDto,
+    val milestones: List<GoalDraftMilestoneDto> = emptyList(),
+    val iteration: Int? = null,
+)
+
+@Serializable
+data class ChatGoalPreviewGoalDto(
+    val title: String,
+    val description: String? = null,
+    val context: String? = null,
+    val priority: Int? = null,
+    val minHoursPerWeek: Double? = null,
+    val color: Long? = null,
+)
+
+@Serializable
 data class UpcomingTaskDto(
     val id: String,
     val title: String,
     val goalId: String? = null,
     val milestoneId: String? = null,
     val date: String? = null,
-    val estimatedHours: Double? = null,
+    val estimatedHours: Double,
     val done: Boolean? = null,
 )
 
@@ -163,6 +204,7 @@ data class ChatMessageRequestDto(
     val userId: String,
     val message: String,
     val context: ChatContextDto? = null,
+    val goalPreview: ChatGoalPreviewRequestDto? = null,
 )
 
 @Serializable
@@ -171,6 +213,7 @@ data class ChatMessageResponseDto(
     val reply: String,
     val action: ChatActionDto? = null,
     val state: ChatSessionStateDto? = null,
+    val context: ChatContextDto? = null,
 )
 
 @Serializable
@@ -181,31 +224,43 @@ data class ChatActionDto(
 
 @Serializable
 data class ChatActionPayloadDto(
-    val goalPreview: GoalPreviewDto? = null,
+    val goalPreview: GoalPreviewPayloadDto? = null,
     val goalPreviewId: String? = null,
 )
 
 @Serializable
-data class GoalPreviewDto(
+data class GoalPreviewPayloadDto(
     val id: String? = null,
-    val goal: PreviewGoalDto? = null,
-    val milestones: List<PreviewMilestoneDto> = emptyList(),
+    val goal: ChatGoalPreviewGoalDto? = null,
+    val milestones: List<GoalDraftMilestoneDto> = emptyList(),
+    val iteration: Int? = null,
+    val status: String? = null,
 )
 
 @Serializable
-data class PreviewGoalDto(
+data class GoalDraftDto(
     val title: String,
+    val description: String? = null,
+    val context: String? = null,
+    val priority: Int? = null,
+    val minHoursPerWeek: Double? = null,
+    val color: Long? = null,
+    val milestones: List<GoalDraftMilestoneDto> = emptyList(),
 )
 
 @Serializable
-data class PreviewMilestoneDto(
+data class GoalDraftMilestoneDto(
     val title: String,
-    val tasks: List<PreviewTaskDto> = emptyList(),
+    val description: String? = null,
+    val tasks: List<GoalDraftTaskDto> = emptyList(),
 )
 
 @Serializable
-data class PreviewTaskDto(
+data class GoalDraftTaskDto(
     val title: String,
+    val description: String? = null,
+    val date: String? = null,
+    val estimatedHours: Double? = null,
 )
 
 @Serializable
@@ -213,6 +268,7 @@ data class ChatSessionStateDto(
     val state: String? = null,
     val iteration: Int? = null,
     val sessionActive: Boolean? = null,
+    val goalPreviewId: String? = null,
 )
 
 @Serializable
@@ -223,4 +279,21 @@ data class ApiListResponseDto<T>(
 @Serializable
 data class ApiDataResponseDto<T>(
     val data: T,
+)
+
+@Serializable
+data class ChatDto(
+    val id: String,
+    val userId: String,
+    val goalPreviewId: String? = null,
+    val sessionId: String? = null,
+    val entries: List<ChatEntryDto> = emptyList(),
+    val createdAt: String? = null,
+)
+
+@Serializable
+data class ChatEntryDto(
+    val sender: String,
+    val message: String,
+    val timestamp: String,
 )
