@@ -14,7 +14,7 @@ import com.google.android.libraries.identity.googleid.GetGoogleIdOption
 import com.google.android.libraries.identity.googleid.GetSignInWithGoogleOption
 import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
 import com.google.android.libraries.identity.googleid.GoogleIdTokenParsingException
-import com.gritto.app.gritto_mobile.BuildConfig
+import com.gritto.app.config.AppConfig
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
 
@@ -86,4 +86,4 @@ actual fun rememberGoogleAuthLauncher(
 
 //private val credentials: Any
 //private val credentials: Any
-actual val platformGoogleClientId: String = BuildConfig.GOOGLE_WEB_CLIENT_ID
+actual val platformGoogleClientId: String = AppConfig.GOOGLE_WEB_CLIENT_ID

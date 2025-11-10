@@ -202,13 +202,13 @@ private fun OnboardingRoute(
     }
     val isGoogleAvailable = googleLauncher != null
 
-    LaunchedEffect(googleLauncher) {
-        googleLauncher?.launchBottomSheet()
-    }
+//    LaunchedEffect(googleLauncher) {
+//        googleLauncher?.launchBottomSheet()
+//    }
 
     OnboardingScreen(
         googleSignInAvailable = isGoogleAvailable,
-        onGoogleSignInClick = { googleLauncher?.launchSignInButton() },
+        onGoogleSignInClick = { googleLauncher?.launchBottomSheet() },
         isLoading = uiState.isLoading,
         errorMessage = googleError ?: uiState.error,
         modifier = modifier,

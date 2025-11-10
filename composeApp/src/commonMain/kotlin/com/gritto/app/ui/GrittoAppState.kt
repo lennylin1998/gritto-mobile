@@ -6,6 +6,7 @@ import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import com.gritto.app.config.AppConfig
 import com.gritto.app.data.network.ApiClient
 import com.gritto.app.data.network.createHttpClient
 import com.gritto.app.data.network.platformHttpClientEngine
@@ -69,8 +70,8 @@ fun rememberGrittoState(): GrittoAppState {
     val apiClient = remember {
         ApiClient(
             httpClient = httpClient,
-//            baseUrl = "http://10.194.233.51:8080",
-            baseUrl = "http://100.70.70.2:8080",
+            baseUrl = "http://10.194.233.51:8080",
+//            baseUrl = AppConfig.API_BASE_URL,
             tokenProvider = { tokenHolder.token },
         )
     }

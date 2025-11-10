@@ -25,6 +25,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
@@ -207,31 +208,36 @@ private fun GoalTreeContent(
             items.forEach { item ->
                 when (item) {
                     is GoalTreeRenderItem.Header -> stickyHeader(key = item.node.id) {
-                        GoalTreeRow(
-                            node = item.node,
-                            level = item.level,
-                            expanded = expandedSnapshot[item.node.id] ?: true,
-                            onExpandToggle = {
-                                if (item.node.children.isNotEmpty()) {
-                                    expanded[item.node.id] = !(expanded[item.node.id] ?: true)
-                                }
-                            },
-                            onTitleClick = {
-                                when (item.node.type) {
-                                    GoalTreeNodeType.Goal -> onGoalTapped(item.node.id)
-                                    GoalTreeNodeType.Milestone -> onMilestoneTapped(item.node.id)
-                                    GoalTreeNodeType.Task -> onTaskTapped(item.node.id)
-                                }
-                            },
-                            onAddClick = {
-                                when (item.node.type) {
-                                    GoalTreeNodeType.Goal -> onGoalPlusTapped(item.node.id)
-                                    GoalTreeNodeType.Milestone -> onMilestonePlusTapped(item.node.id)
-                                    GoalTreeNodeType.Task -> onTaskTapped(item.node.id)
-                                }
-                            },
-                            showAdd = !isPreview && item.node.type != GoalTreeNodeType.Task,
-                        )
+                        Surface(
+                            color = MaterialTheme.colorScheme.background, // or any solid color
+                            tonalElevation = 2.dp
+                        ) {
+                            GoalTreeRow(
+                                node = item.node,
+                                level = item.level,
+                                expanded = expandedSnapshot[item.node.id] ?: true,
+                                onExpandToggle = {
+                                    if (item.node.children.isNotEmpty()) {
+                                        expanded[item.node.id] = !(expanded[item.node.id] ?: true)
+                                    }
+                                },
+                                onTitleClick = {
+                                    when (item.node.type) {
+                                        GoalTreeNodeType.Goal -> onGoalTapped(item.node.id)
+                                        GoalTreeNodeType.Milestone -> onMilestoneTapped(item.node.id)
+                                        GoalTreeNodeType.Task -> onTaskTapped(item.node.id)
+                                    }
+                                },
+                                onAddClick = {
+                                    when (item.node.type) {
+                                        GoalTreeNodeType.Goal -> onGoalPlusTapped(item.node.id)
+                                        GoalTreeNodeType.Milestone -> onMilestonePlusTapped(item.node.id)
+                                        GoalTreeNodeType.Task -> onTaskTapped(item.node.id)
+                                    }
+                                },
+                                showAdd = !isPreview && item.node.type != GoalTreeNodeType.Task,
+                            )
+                        }
                     }
                     is GoalTreeRenderItem.Item -> item(item.node.id) {
                         GoalTreeRow(
