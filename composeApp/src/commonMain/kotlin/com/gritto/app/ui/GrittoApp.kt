@@ -96,7 +96,6 @@ private fun HomeRoute(
         isLoading = uiState.isLoading,
         errorMessage = uiState.error,
         onRetry = { viewModel.refresh() },
-        onTaskListsChange = { viewModel.onTaskListsChange(it) },
         onGoalReordered = { viewModel.onGoalsReordered(it) },
         onGoalClick = { goal ->
             navigator.navigate(GrittoNavRoutes.goalTree(goal.id))

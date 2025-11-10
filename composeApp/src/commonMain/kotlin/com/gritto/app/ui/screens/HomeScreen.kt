@@ -20,12 +20,8 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
@@ -34,7 +30,6 @@ import androidx.compose.ui.unit.dp
 import com.gritto.app.theme.GrittoTheme
 import com.gritto.app.ui.components.GoalList
 import com.gritto.app.ui.components.TaskListsCarousel
-import com.gritto.app.ui.components.rememberGoalListState
 import com.gritto.app.ui.model.GoalUiModel
 import com.gritto.app.ui.model.TaskListUiModel
 import com.gritto.app.ui.model.TaskUiModel
@@ -53,50 +48,30 @@ fun HomeScreen(
     onTaskClick: (TaskUiModel) -> Unit = {},
     onTaskChecked: (TaskUiModel) -> Unit = {},
     onTaskCompletionUndo: (TaskUiModel) -> Unit = {},
-    onTaskListsChange: (List<TaskListUiModel>) -> Unit = {},
     onGoalClick: (GoalUiModel) -> Unit = {},
     onGoalReordered: (List<GoalUiModel>) -> Unit = {},
 ) {
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
 
-    var currentTaskLists by remember { mutableStateOf(taskLists) }
-    LaunchedEffect(taskLists) {
-        currentTaskLists = taskLists
+    fun moveGoal(fromIndex: Int, toIndex: Int) {
+        if (fromIndex !in goals.indices || toIndex !in goals.indices || fromIndex == toIndex) return
+        val updated = goals.toMutableList()
+        val moving = updated.removeAt(fromIndex)
+        updated.add(toIndex, moving)
+        onGoalReordered(updated)
     }
 
-    val goalListState = rememberGoalListState(
-        goals = goals,
-        onReordered = onGoalReordered,
-    )
-
-    fun commitTaskLists(updated: List<TaskListUiModel>) {
-        currentTaskLists = updated
-        onTaskListsChange(updated)
-    }
-
-    fun handleTaskCompletion(list: TaskListUiModel, task: TaskUiModel) {
-        val removal = removeTaskFromLists(
-            lists = currentTaskLists,
-            listId = list.id,
-            taskId = task.id,
-        ) ?: return
-        commitTaskLists(removal.updatedLists)
+    fun handleTaskCompletion(task: TaskUiModel) {
         scope.launch {
+            onTaskChecked(task)
             val result = snackbarHostState.showSnackbar(
-                message = "Marked \"${removal.task.title}\" complete",
+                message = "Marked \"${task.title}\" complete",
                 actionLabel = "Undo",
                 duration = SnackbarDuration.Short,
             )
             if (result == SnackbarResult.ActionPerformed) {
-                val restored = restoreTaskToLists(
-                    lists = currentTaskLists,
-                    removal = removal,
-                )
-                commitTaskLists(restored)
-                onTaskCompletionUndo(removal.task)
-            } else {
-                onTaskChecked(removal.task)
+                onTaskCompletionUndo(task)
             }
         }
     }
@@ -166,14 +141,10 @@ fun HomeScreen(
                             .height(320.dp)  // ← Constrain TaskList height
                     ) {
                         TaskListsCarousel(
-                            taskLists = currentTaskLists,
+                            taskLists = taskLists,
                             modifier = Modifier.fillMaxWidth(),
-                            onTaskChecked = { list, task ->
-                                handleTaskCompletion(list, task)
-                            },
-                            onTaskClick = { _, task ->
-                                onTaskClick(task)
-                            },
+                            onTaskChecked = { task -> handleTaskCompletion(task) },
+                            onTaskClick = onTaskClick,
                         )
                     }
                 }
@@ -191,15 +162,16 @@ fun HomeScreen(
                             .fillMaxWidth()
                             .weight(1f),
                     ) {
-                        if (goalListState.items.isEmpty()) {
+                        if (goals.isEmpty()) {
                             GoalEmptyState(
                                 modifier = Modifier.align(Alignment.TopStart),
                             )
                         } else {
                             GoalList(
-                                state = goalListState,
+                                goals = goals,
                                 modifier = Modifier.fillMaxSize(),
                                 onGoalClick = onGoalClick,
+                                onGoalReorder = ::moveGoal,
                             )
                         }
                     }
@@ -213,68 +185,6 @@ fun HomeScreen(
                 .padding(bottom = contentPadding.calculateBottomPadding() + 24.dp),
         )
     }
-}
-
-private data class TaskRemoval(
-    val updatedLists: List<TaskListUiModel>,
-    val task: TaskUiModel,
-    val listId: String,
-    val listIndex: Int,
-    val taskIndex: Int,
-    val originalList: TaskListUiModel,
-)
-
-private fun removeTaskFromLists(
-    lists: List<TaskListUiModel>,
-    listId: String,
-    taskId: String,
-): TaskRemoval? {
-    val listIndex = lists.indexOfFirst { it.id == listId }
-    if (listIndex == -1) return null
-    val list = lists[listIndex]
-    val taskIndex = list.tasks.indexOfFirst { it.id == taskId }
-    if (taskIndex == -1) return null
-
-    val task = list.tasks[taskIndex]
-    val updatedTasks = list.tasks.toMutableList().apply { removeAt(taskIndex) }
-    val updatedLists = lists.toMutableList().apply {
-        if (updatedTasks.isEmpty()) {
-            removeAt(listIndex)
-        } else {
-            this[listIndex] = list.copy(tasks = updatedTasks)
-        }
-    }
-    return TaskRemoval(
-        updatedLists = updatedLists,
-        task = task,
-        listId = listId,
-        listIndex = listIndex,
-        taskIndex = taskIndex,
-        originalList = list,
-    )
-}
-
-private fun restoreTaskToLists(
-    lists: List<TaskListUiModel>,
-    removal: TaskRemoval,
-): List<TaskListUiModel> {
-    val mutableLists = lists.toMutableList()
-    val existingIndex = mutableLists.indexOfFirst { it.id == removal.listId }
-    if (existingIndex == -1) {
-        val tasks = removal.originalList.tasks.toMutableList()
-        val insertIndex = removal.taskIndex.coerceIn(0, tasks.size)
-        tasks.add(insertIndex, removal.task)
-        val restoredList = removal.originalList.copy(tasks = tasks)
-        val listInsertIndex = removal.listIndex.coerceIn(0, mutableLists.size)
-        mutableLists.add(listInsertIndex, restoredList)
-    } else {
-        val existingList = mutableLists[existingIndex]
-        val tasks = existingList.tasks.toMutableList()
-        val insertIndex = removal.taskIndex.coerceIn(0, tasks.size)
-        tasks.add(insertIndex, removal.task)
-        mutableLists[existingIndex] = existingList.copy(tasks = tasks)
-    }
-    return mutableLists
 }
 
 @Composable
@@ -389,7 +299,6 @@ fun HomeScreenPreview() {
             onTaskClick = {},
             onTaskChecked = {},
             onTaskCompletionUndo = {},
-            onTaskListsChange = {},
             onGoalClick = {},
             onGoalReordered = {},
         )

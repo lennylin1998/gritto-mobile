@@ -1119,7 +1119,7 @@ Response Examples
 
 ⸻
 
-4️⃣ POST /v1/tasks/{taskId}:done
+4️⃣ POST /v1/tasks/{taskId}/done
 
 Purpose
 
@@ -1170,7 +1170,7 @@ Response Example
 
 ⸻
 
-5️⃣ POST /v1/tasks/{taskId}:undone
+5️⃣ POST /v1/tasks/{taskId}/undone
 
 Purpose
 

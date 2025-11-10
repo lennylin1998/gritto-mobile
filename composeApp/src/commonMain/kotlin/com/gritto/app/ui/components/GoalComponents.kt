@@ -20,18 +20,13 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.runtime.snapshots.SnapshotStateList
-import androidx.compose.runtime.toMutableStateList
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -98,58 +93,47 @@ fun GoalCard(
     }
 }
 
-@Stable
-class GoalListState internal constructor(
-    private val goals: SnapshotStateList<GoalUiModel>,
-    internal var onReordered: (List<GoalUiModel>) -> Unit,
-) {
-    val items: List<GoalUiModel> get() = goals
 
-    fun move(from: Int, to: Int) {
-        if (from !in goals.indices || to !in goals.indices || from == to) {
-            return
-        }
-        val updated = goals.toMutableList()
-        val moving = updated.removeAt(from)
-        updated.add(to, moving)
-        goals.clear()
-        goals.addAll(updated.reassignPriorities())
-        onReordered(goals.toList())
-    }
-
-    fun indexOf(goalId: String): Int = goals.indexOfFirst { it.id == goalId }
-
-    internal fun replaceAll(newGoals: List<GoalUiModel>) {
-        goals.clear()
-        goals.addAll(newGoals)
-    }
-}
-
-@Composable
-fun rememberGoalListState(
+private fun findTargetIndex(
     goals: List<GoalUiModel>,
-    onReordered: (List<GoalUiModel>) -> Unit = {},
-): GoalListState {
-    val state = remember {
-        GoalListState(
-            goals = goals.reassignPriorities().toMutableStateList(),
-            onReordered = onReordered,
-        )
+    lazyListState: LazyListState,
+    currentGoalId: String,
+    dragOffset: Float,
+): Int? {
+    if (dragOffset == 0f) return null
+    val visibleItems = lazyListState.layoutInfo.visibleItemsInfo
+    val currentInfo = visibleItems.fastFirstOrNull { it.key == currentGoalId } ?: return null
+    val currentIndex = goals.indexOfFirst { it.id == currentGoalId }
+    return if (dragOffset > 0f) {
+        val currentBottom = currentInfo.offset + currentInfo.size + dragOffset
+        visibleItems
+            .filter { it.index > currentIndex }
+            .firstOrNull { currentBottom > it.offset + it.size / 2f }
+            ?.index
+    } else {
+        val currentTop = currentInfo.offset + dragOffset
+        visibleItems
+            .filter { it.index < currentIndex }
+            .lastOrNull { currentTop < it.offset + it.size / 2f }
+            ?.index
     }
-    LaunchedEffect(goals) {
-        state.replaceAll(goals.reassignPriorities())
-    }
-    LaunchedEffect(onReordered) {
-        state.onReordered = onReordered
-    }
-    return state
 }
+
+private fun Modifier.translationOverlay(offset: Float): Modifier = this.then(
+    Modifier
+        .padding(horizontal = 2.dp)
+        .graphicsLayer {
+            translationY = offset
+            shadowElevation = 8.dp.toPx()
+        },
+)
 
 @Composable
 fun GoalList(
-    state: GoalListState,
+    goals: List<GoalUiModel>,
     modifier: Modifier = Modifier,
     onGoalClick: (GoalUiModel) -> Unit,
+    onGoalReorder: (fromIndex: Int, toIndex: Int) -> Unit = { _, _ -> },
 ) {
     val lazyListState = rememberLazyListState()
     var draggingGoalId by remember { mutableStateOf<String?>(null) }
@@ -160,7 +144,7 @@ fun GoalList(
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
         items(
-            items = state.items,
+            items = goals,
             key = { it.id },
         ) { goal ->
             val isDragging = draggingGoalId == goal.id
@@ -191,15 +175,15 @@ fun GoalList(
                             onDrag = { change, dragAmount ->
                                 change.consume()
                                 itemOffset += dragAmount.y
-                                val currentIndex = state.indexOf(goal.id)
+                                val currentIndex = goals.indexOfFirst { it.id == goal.id }
                                 val proposedIndex = findTargetIndex(
-                                    state = state,
+                                    goals = goals,
                                     lazyListState = lazyListState,
                                     currentGoalId = goal.id,
                                     dragOffset = itemOffset,
                                 )
                                 if (proposedIndex != null && proposedIndex != currentIndex) {
-                                    state.move(currentIndex, proposedIndex)
+                                    onGoalReorder(currentIndex, proposedIndex)
                                     itemOffset = 0f
                                 }
                             },
@@ -211,40 +195,6 @@ fun GoalList(
         }
     }
 }
-
-private fun findTargetIndex(
-    state: GoalListState,
-    lazyListState: LazyListState,
-    currentGoalId: String,
-    dragOffset: Float,
-): Int? {
-    if (dragOffset == 0f) return null
-    val visibleItems = lazyListState.layoutInfo.visibleItemsInfo
-    val currentInfo = visibleItems.fastFirstOrNull { it.key == currentGoalId } ?: return null
-    val currentIndex = state.indexOf(currentGoalId)
-    return if (dragOffset > 0f) {
-        val currentBottom = currentInfo.offset + currentInfo.size + dragOffset
-        visibleItems
-            .filter { it.index > currentIndex }
-            .firstOrNull { currentBottom > it.offset + it.size / 2f }
-            ?.index
-    } else {
-        val currentTop = currentInfo.offset + dragOffset
-        visibleItems
-            .filter { it.index < currentIndex }
-            .lastOrNull { currentTop < it.offset + it.size / 2f }
-            ?.index
-    }
-}
-
-private fun Modifier.translationOverlay(offset: Float): Modifier = this.then(
-    Modifier
-        .padding(horizontal = 2.dp)
-        .graphicsLayer {
-            translationY = offset
-            shadowElevation = 8.dp.toPx()
-        },
-)
 
 @Composable
 private fun GoalColorBadge(color: Color, modifier: Modifier = Modifier) {
@@ -272,15 +222,6 @@ private fun GoalColorBadge(color: Color, modifier: Modifier = Modifier) {
 //    }
 //}
 
-private fun List<GoalUiModel>.reassignPriorities(): List<GoalUiModel> =
-    mapIndexed { index, item ->
-        if (item.priority == index + 1) {
-            item
-        } else {
-            item.copy(priority = index + 1)
-        }
-    }
-
 private fun Long.toComposeColor(): Color = Color(this.toInt())
 
 @Preview
@@ -306,9 +247,8 @@ private fun GoalListPreview() {
         GoalUiModel(id = "2", name = "Improve onboarding", progress = 0.8f, priority = 2, accentColor = 0xFF26A69A),
         GoalUiModel(id = "3", name = "Boost retention", progress = 0.2f, priority = 3, accentColor = 0xFFFFA000),
     )
-    val state = rememberGoalListState(goals)
     GoalList(
-        state = state,
+        goals = goals,
         onGoalClick = {},
     )
 }

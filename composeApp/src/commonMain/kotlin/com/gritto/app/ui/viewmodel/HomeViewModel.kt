@@ -3,7 +3,6 @@ package com.gritto.app.ui.viewmodel
 import com.gritto.app.data.network.ApiResult
 import com.gritto.app.data.remote.model.ActiveGoalDto
 import com.gritto.app.data.remote.model.TaskSummaryDto
-import com.gritto.app.data.remote.model.TaskUpdateRequestDto
 import com.gritto.app.data.repository.GrittoRepository
 import com.gritto.app.ui.model.GoalUiModel
 import com.gritto.app.ui.model.TaskListUiModel
@@ -49,12 +48,8 @@ class HomeViewModel(
         refresh(currentDate())
     }
 
-    fun onTaskListsChange(updated: List<TaskListUiModel>) {
-        _uiState.value = _uiState.value.copy(taskLists = updated)
-    }
-
     fun onGoalsReordered(updated: List<GoalUiModel>) {
-        _uiState.value = _uiState.value.copy(goals = updated)
+        _uiState.value = _uiState.value.copy(goals = updated.reassignPriorities())
     }
 
     fun refresh(date: LocalDate = _uiState.value.selectedDate) {
@@ -92,11 +87,13 @@ class HomeViewModel(
 
     fun setTaskCompletion(taskId: String, done: Boolean) {
         viewModelScope.launch {
-            when (repository.updateTask(taskId, TaskUpdateRequestDto(done = done))) {
-                is ApiResult.Success -> refresh(_uiState.value.selectedDate)
-                is ApiResult.Error -> {
-                    // no-op; let refresh keep current state
-                }
+            val result = if (done) {
+                repository.markTaskDone(taskId)
+            } else {
+                repository.markTaskUndone(taskId)
+            }
+            if (result is ApiResult.Success) {
+                refresh(_uiState.value.selectedDate)
             }
         }
     }
@@ -159,5 +156,14 @@ class HomeViewModel(
                 priority = dto.priority.takeIf { it > 0 } ?: (index + 1),
                 accentColor = dto.color,
             )
+        }
+
+    private fun List<GoalUiModel>.reassignPriorities(): List<GoalUiModel> =
+        mapIndexed { index, item ->
+            if (item.priority == index + 1) {
+                item
+            } else {
+                item.copy(priority = index + 1)
+            }
         }
 }

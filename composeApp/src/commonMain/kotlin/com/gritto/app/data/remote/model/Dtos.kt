@@ -71,6 +71,13 @@ data class TaskDetailDto(
 )
 
 @Serializable
+data class TaskStatusDto(
+    val id: String,
+    val status: String? = null,
+    val updatedAt: String? = null,
+)
+
+@Serializable
 data class TaskUpdateRequestDto(
     val title: String? = null,
     val description: String? = null,

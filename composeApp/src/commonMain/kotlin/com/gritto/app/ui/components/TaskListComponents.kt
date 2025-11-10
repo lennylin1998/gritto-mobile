@@ -41,8 +41,8 @@ import org.jetbrains.compose.ui.tooling.preview.Preview
 fun TaskListsCarousel(
     taskLists: List<TaskListUiModel>,
     modifier: Modifier = Modifier,
-    onTaskChecked: (TaskListUiModel, TaskUiModel) -> Unit,
-    onTaskClick: (TaskListUiModel, TaskUiModel) -> Unit,
+    onTaskChecked: (TaskUiModel) -> Unit,
+    onTaskClick: (TaskUiModel) -> Unit,
 ) {
     if (taskLists.isEmpty()) {
         EmptyTaskListCard(modifier = modifier)
@@ -64,8 +64,8 @@ fun TaskListsCarousel(
         ) { taskList ->
             TaskListCard(
                 list = taskList,
-                onTaskChecked = { onTaskChecked(taskList, it) },
-                onTaskClick = { onTaskClick(taskList, it) },
+                onTaskChecked = onTaskChecked,
+                onTaskClick = onTaskClick,
             )
         }
     }

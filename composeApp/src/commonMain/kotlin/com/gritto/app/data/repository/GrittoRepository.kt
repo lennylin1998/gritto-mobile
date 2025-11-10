@@ -15,6 +15,7 @@ import com.gritto.app.data.remote.model.ProfileDto
 import com.gritto.app.data.remote.model.ProfileUpdateRequestDto
 import com.gritto.app.data.remote.model.TaskDetailResponseDto
 import com.gritto.app.data.remote.model.TaskSummaryDto
+import com.gritto.app.data.remote.model.TaskStatusDto
 import com.gritto.app.data.remote.model.TaskUpdateRequestDto
 import io.ktor.client.request.parameter
 import kotlinx.datetime.LocalDate
@@ -34,6 +35,8 @@ interface GrittoRepository {
     suspend fun fetchGoalSessionHistory(sessionId: String): ApiResult<ChatHistoryResponseDto>
     suspend fun sendGoalSessionMessage(body: ChatMessageRequestDto): ApiResult<ChatMessageResponseDto>
     suspend fun updateTask(taskId: String, request: TaskUpdateRequestDto): ApiResult<TaskDetailResponseDto>
+    suspend fun markTaskDone(taskId: String): ApiResult<ApiDataResponseDto<TaskStatusDto>>
+    suspend fun markTaskUndone(taskId: String): ApiResult<ApiDataResponseDto<TaskStatusDto>>
     suspend fun updateProfile(request: ProfileUpdateRequestDto): ApiResult<ApiDataResponseDto<ProfileDto>>
 }
 
@@ -89,6 +92,12 @@ class DefaultGrittoRepository(
 
     override suspend fun updateTask(taskId: String, request: TaskUpdateRequestDto): ApiResult<TaskDetailResponseDto> =
         apiClient.patch(path = "/v1/tasks/$taskId", body = request)
+
+    override suspend fun markTaskDone(taskId: String): ApiResult<ApiDataResponseDto<TaskStatusDto>> =
+        apiClient.post(path = "/v1/tasks/$taskId/done", body = emptyMap<String, String>())
+
+    override suspend fun markTaskUndone(taskId: String): ApiResult<ApiDataResponseDto<TaskStatusDto>> =
+        apiClient.post(path = "/v1/tasks/$taskId/undone", body = emptyMap<String, String>())
 
     override suspend fun updateProfile(request: ProfileUpdateRequestDto): ApiResult<ApiDataResponseDto<ProfileDto>> =
         apiClient.patch(path = "/v1/me", body = request)
