@@ -17,6 +17,7 @@ import com.gritto.app.data.remote.model.TaskDetailResponseDto
 import com.gritto.app.data.remote.model.TaskSummaryDto
 import com.gritto.app.data.remote.model.TaskStatusDto
 import com.gritto.app.data.remote.model.TaskUpdateRequestDto
+import com.gritto.app.data.remote.model.GoalPreviewResponseDto
 import io.ktor.client.request.parameter
 import kotlinx.datetime.LocalDate
 import kotlinx.serialization.Serializable
@@ -32,6 +33,7 @@ interface GrittoRepository {
     suspend fun fetchGoalMilestones(goalId: String): ApiResult<MilestoneListResponseDto>
     suspend fun fetchMilestoneDetail(milestoneId: String): ApiResult<MilestoneDetailResponseDto>
     suspend fun fetchLatestGoalSession(): ApiResult<com.gritto.app.data.remote.model.ChatSessionResponseDto>
+    suspend fun fetchGoalPreview(goalPreviewId: String): ApiResult<GoalPreviewResponseDto>
     suspend fun fetchGoalSessionHistory(sessionId: String): ApiResult<ChatHistoryResponseDto>
     suspend fun sendGoalSessionMessage(body: ChatMessageRequestDto): ApiResult<ChatMessageResponseDto>
     suspend fun updateTask(taskId: String, request: TaskUpdateRequestDto): ApiResult<TaskDetailResponseDto>
@@ -83,6 +85,9 @@ class DefaultGrittoRepository(
 
     override suspend fun fetchLatestGoalSession(): ApiResult<com.gritto.app.data.remote.model.ChatSessionResponseDto> =
         apiClient.get(path = "/v1/agent/goal/session:latest")
+
+    override suspend fun fetchGoalPreview(goalPreviewId: String): ApiResult<GoalPreviewResponseDto> =
+        apiClient.get(path = "/v1/goal-previews/$goalPreviewId")
 
     override suspend fun fetchGoalSessionHistory(sessionId: String): ApiResult<ChatHistoryResponseDto> =
         apiClient.get(path = "/v1/agent/goal/session/$sessionId/history")

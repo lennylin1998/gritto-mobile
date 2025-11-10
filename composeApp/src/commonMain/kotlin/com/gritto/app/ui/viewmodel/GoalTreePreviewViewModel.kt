@@ -1,0 +1,123 @@
+package com.gritto.app.ui.viewmodel
+
+import com.gritto.app.data.network.ApiResult
+import com.gritto.app.data.remote.model.PlanMilestoneDto
+import com.gritto.app.data.remote.model.PlanTaskDto
+import com.gritto.app.data.remote.model.GoalPreviewPayloadDto
+import com.gritto.app.data.repository.GrittoRepository
+import com.gritto.app.model.GoalTreeNode
+import com.gritto.app.model.GoalTreeNodeType
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.launch
+import moe.tlaster.precompose.viewmodel.ViewModel
+import moe.tlaster.precompose.viewmodel.viewModelScope
+
+data class GoalTreePreviewUiState(
+    val isLoading: Boolean = true,
+    val node: GoalTreeNode? = null,
+    val error: String? = null,
+)
+
+class GoalTreePreviewViewModel(
+    private val repository: GrittoRepository,
+    private val goalPreviewId: String,
+) : ViewModel() {
+
+    private val _uiState = MutableStateFlow(GoalTreePreviewUiState())
+    val uiState: StateFlow<GoalTreePreviewUiState> = _uiState.asStateFlow()
+
+    init {
+        loadPreview()
+    }
+
+    fun retry() {
+        loadPreview()
+    }
+
+    private fun loadPreview() {
+        viewModelScope.launch {
+            _uiState.value = GoalTreePreviewUiState(isLoading = true)
+            when (val result = repository.fetchGoalPreview(goalPreviewId)) {
+                is ApiResult.Success -> {
+                    val node = result.value.data.toGoalTreeNode()
+                    if (node != null) {
+                        _uiState.value = GoalTreePreviewUiState(
+                            isLoading = false,
+                            node = node,
+                        )
+                    } else {
+                        _uiState.value = GoalTreePreviewUiState(
+                            isLoading = false,
+                            error = "Preview is missing goal details.",
+                        )
+                    }
+                }
+
+                is ApiResult.Error -> {
+                    _uiState.value = GoalTreePreviewUiState(
+                        isLoading = false,
+                        error = result.message,
+                    )
+                }
+            }
+        }
+    }
+}
+
+private fun GoalPreviewPayloadDto.toGoalTreeNode(): GoalTreeNode? {
+    val plan = data ?: return null
+    val goalInfo = plan.goal ?: return null
+    val subtitle = buildList {
+        goalInfo.description?.takeIf { it.isNotBlank() }?.let { add(it) }
+        goalInfo.hoursPerWeek?.let { add("$it h/week") }
+    }.takeIf { it.isNotEmpty() }?.joinToString(" • ")
+
+    val milestoneNodes = plan.milestones
+        .takeIf { it.isNotEmpty() }
+        ?.mapIndexed { index, milestone ->
+            milestone.toGoalTreeNode(index)
+        }
+        ?: emptyList()
+
+    val rootId = id ?: goalInfo.title
+    return GoalTreeNode(
+        id = rootId,
+        title = goalInfo.title,
+        subtitle = subtitle,
+        type = GoalTreeNodeType.Goal,
+        children = milestoneNodes,
+    )
+}
+
+private fun PlanMilestoneDto.toGoalTreeNode(index: Int): GoalTreeNode {
+    val milestoneSubtitle = description?.takeIf { it.isNotBlank() }
+    val taskNodes = tasks.mapIndexed { taskIndex, task ->
+        task.toGoalTreeNode(index, taskIndex)
+    }
+    return GoalTreeNode(
+        id = "preview-milestone-$index-${title.hashCode()}",
+        title = title,
+        subtitle = milestoneSubtitle,
+        type = GoalTreeNodeType.Milestone,
+        children = taskNodes,
+    )
+}
+
+private fun PlanTaskDto.toGoalTreeNode(milestoneIndex: Int, taskIndex: Int): GoalTreeNode {
+    val subtitleParts = buildList {
+        date?.takeIf { it.isNotBlank() }?.let { add(it) }
+        estimatedHours?.let { add("${it}h") }
+        description?.takeIf { it.isNotBlank() }?.let { add(it) }
+    }
+    val subtitle = subtitleParts.takeIf { it.isNotEmpty() }?.joinToString(" • ")
+
+    return GoalTreeNode(
+        id = "preview-task-$milestoneIndex-$taskIndex-${title.hashCode()}",
+        title = title,
+        subtitle = subtitle,
+        type = GoalTreeNodeType.Task,
+        children = emptyList(),
+    )
+}

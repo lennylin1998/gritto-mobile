@@ -78,6 +78,7 @@ fun App() {
                 scene(route = GrittoNavRoutes.GoalTreePreview) { backStackEntry ->
                     GoalTreePreviewScreen(
                         goalPreviewId = backStackEntry.path("goalPreviewId"),
+                        repository = appState.repository,
                         navigator = navigator,
                     )
                 }

@@ -134,13 +134,10 @@ class ChatViewModel(
                         id = "agent-${getTimeMillis()}",
                         text = replyText,
                     )
-                    val newGoalPreviewId = result.value.state?.goalPreviewId
-                        ?: result.value.action?.payload?.goalPreview?.id
-                        ?: result.value.action?.payload?.goalPreviewId
                     _uiState.update { state ->
                         state.copy(
                             messages = state.messages + agentMessage,
-                            goalPreviewId = newGoalPreviewId ?: state.goalPreviewId,
+                            goalPreviewId = state.goalPreviewId,
                             isSessionActive = result.value.state?.sessionActive ?: state.isSessionActive,
                         )
                     }

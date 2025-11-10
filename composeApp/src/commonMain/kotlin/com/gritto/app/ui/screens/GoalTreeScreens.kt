@@ -3,6 +3,7 @@ package com.gritto.app.ui.screens
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -17,6 +18,8 @@ import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.rounded.ChevronRight
 import androidx.compose.material.icons.rounded.ExpandMore
+import androidx.compose.material3.Button
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -25,6 +28,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.remember
@@ -32,12 +36,15 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
+import com.gritto.app.data.repository.GrittoRepository
 import com.gritto.app.model.GoalTreeNode
 import com.gritto.app.model.GoalTreeNodeType
 import com.gritto.app.model.SampleData
 import com.gritto.app.navigation.GrittoNavRoutes
 import com.gritto.app.ui.components.MissingEntityMessage
+import com.gritto.app.ui.viewmodel.GoalTreePreviewViewModel
 import moe.tlaster.precompose.navigation.Navigator
+import moe.tlaster.precompose.viewmodel.viewModel
 
 @Composable
 fun GoalTreeScreen(
@@ -72,6 +79,7 @@ fun GoalTreeScreen(
 @Composable
 fun GoalTreePreviewScreen(
     goalPreviewId: String?,
+    repository: GrittoRepository,
     navigator: Navigator,
 ) {
     if (goalPreviewId.isNullOrBlank()) {
@@ -82,19 +90,71 @@ fun GoalTreePreviewScreen(
         )
         return
     }
-    val preview = remember(goalPreviewId) { SampleData.goalTreePreview }
-    GoalTreeContent(
-        title = "Goal Preview",
-        node = preview,
-        isPreview = true,
-        onBack = navigator::goBack,
-        onAddGoal = {},
-        onGoalTapped = {},
-        onGoalPlusTapped = {},
-        onMilestoneTapped = {},
-        onMilestonePlusTapped = {},
-        onTaskTapped = {},
-    )
+    val previewViewModel = viewModel(
+        modelClass = GoalTreePreviewViewModel::class,
+        keys = listOf(goalPreviewId),
+    ) {
+        GoalTreePreviewViewModel(
+            repository = repository,
+            goalPreviewId = goalPreviewId,
+        )
+    }
+    val uiState by previewViewModel.uiState.collectAsState()
+
+    when {
+        uiState.isLoading -> {
+            GoalTreePreviewStateScaffold(
+                title = "Goal Preview",
+                onBack = navigator::goBack,
+            ) {
+                CircularProgressIndicator()
+            }
+        }
+        uiState.error != null -> {
+            GoalTreePreviewStateScaffold(
+                title = "Goal Preview",
+                onBack = navigator::goBack,
+            ) {
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                ) {
+                    MissingEntityMessage(
+                        label = "We couldn't load this preview",
+                        supportingText = uiState.error ?: "Something went wrong.",
+                    )
+                    Button(onClick = { previewViewModel.retry() }) {
+                        Text("Retry")
+                    }
+                }
+            }
+        }
+        uiState.node != null -> {
+            val previewNode = uiState.node!!
+            GoalTreeContent(
+                title = "Goal Preview",
+                node = previewNode,
+                isPreview = true,
+                onBack = navigator::goBack,
+                onAddGoal = {},
+                onGoalTapped = {},
+                onGoalPlusTapped = {},
+                onMilestoneTapped = {},
+                onMilestonePlusTapped = {},
+                onTaskTapped = {},
+            )
+        }
+        else -> {
+            GoalTreePreviewStateScaffold(
+                title = "Goal Preview",
+                onBack = navigator::goBack,
+            ) {
+                MissingEntityMessage(
+                    label = "Goal preview unavailable",
+                )
+            }
+        }
+    }
 }
 
 @Composable
@@ -186,6 +246,36 @@ private fun GoalTreeContent(
                     }
                 }
             }
+        }
+    }
+}
+
+@Composable
+private fun GoalTreePreviewStateScaffold(
+    title: String,
+    onBack: () -> Unit,
+    content: @Composable () -> Unit,
+) {
+    @OptIn(ExperimentalMaterial3Api::class)
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text(title) },
+                navigationIcon = {
+                    IconButton(onClick = onBack) {
+                        Icon(Icons.Filled.Close, contentDescription = "Close preview")
+                    }
+                },
+            )
+        },
+    ) { padding ->
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(padding),
+            contentAlignment = Alignment.Center,
+        ) {
+            content()
         }
     }
 }
