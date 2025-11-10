@@ -6,6 +6,7 @@ import com.gritto.app.data.remote.model.ActiveGoalDto
 import com.gritto.app.data.remote.model.ApiDataResponseDto
 import com.gritto.app.data.remote.model.ApiListResponseDto
 import com.gritto.app.data.remote.model.AuthResponseDto
+import com.gritto.app.data.remote.model.ChatHistoryResponseDto
 import com.gritto.app.data.remote.model.ChatMessageRequestDto
 import com.gritto.app.data.remote.model.ChatMessageResponseDto
 import com.gritto.app.data.remote.model.MilestoneDetailResponseDto
@@ -30,6 +31,7 @@ interface GrittoRepository {
     suspend fun fetchGoalMilestones(goalId: String): ApiResult<MilestoneListResponseDto>
     suspend fun fetchMilestoneDetail(milestoneId: String): ApiResult<MilestoneDetailResponseDto>
     suspend fun fetchLatestGoalSession(): ApiResult<com.gritto.app.data.remote.model.ChatSessionResponseDto>
+    suspend fun fetchGoalSessionHistory(sessionId: String): ApiResult<ChatHistoryResponseDto>
     suspend fun sendGoalSessionMessage(body: ChatMessageRequestDto): ApiResult<ChatMessageResponseDto>
     suspend fun updateTask(taskId: String, request: TaskUpdateRequestDto): ApiResult<TaskDetailResponseDto>
     suspend fun updateProfile(request: ProfileUpdateRequestDto): ApiResult<ApiDataResponseDto<ProfileDto>>
@@ -78,6 +80,9 @@ class DefaultGrittoRepository(
 
     override suspend fun fetchLatestGoalSession(): ApiResult<com.gritto.app.data.remote.model.ChatSessionResponseDto> =
         apiClient.get(path = "/v1/agent/goal/session:latest")
+
+    override suspend fun fetchGoalSessionHistory(sessionId: String): ApiResult<ChatHistoryResponseDto> =
+        apiClient.get(path = "/v1/agent/goal/session/$sessionId/history")
 
     override suspend fun sendGoalSessionMessage(body: ChatMessageRequestDto): ApiResult<ChatMessageResponseDto> =
         apiClient.post(path = "/v1/agent/goal/session:message", body = body)

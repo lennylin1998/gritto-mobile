@@ -151,6 +151,11 @@ data class ChatSessionResponseDto(
 )
 
 @Serializable
+data class ChatHistoryResponseDto(
+    val data: ChatHistoryDto,
+)
+
+@Serializable
 data class ChatSessionDto(
     val sessionId: String,
     val chatId: String? = null,
@@ -168,6 +173,13 @@ data class ChatSessionDto(
 data class ChatContextDto(
     val availableHoursLeft: Int? = null,
     val upcomingTasks: List<UpcomingTaskDto> = emptyList(),
+)
+
+@Serializable
+data class ChatHistoryDto(
+    val sessionId: String,
+    val chatId: String? = null,
+    val entries: List<ChatEntryDto> = emptyList(),
 )
 
 @Serializable

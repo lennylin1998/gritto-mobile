@@ -61,12 +61,27 @@ class ChatViewModel(
                 val session = result.value.data
                 sessionContext = session.context
                 latestGoalPreview = null
-                val history = mapChatEntries(session.chat?.entries)
+                val sessionActive = session.sessionActive ?: true
+                val history = if (sessionActive) {
+                    when (val historyResult = repository.fetchGoalSessionHistory(session.sessionId)) {
+                        is ApiResult.Success -> mapChatEntries(historyResult.value.data.entries)
+                        is ApiResult.Error -> {
+                            _uiState.value = ChatUiState(
+                                isLoading = false,
+                                error = historyResult.message,
+                            )
+                            loadingSession = false
+                            return
+                        }
+                    }
+                } else {
+                    mapChatEntries(null)
+                }
                 _uiState.value = ChatUiState(
                     isLoading = false,
                     sessionId = session.sessionId,
                     goalPreviewId = session.goalPreviewId,
-                    isSessionActive = session.sessionActive ?: true,
+                    isSessionActive = sessionActive,
                     messages = history,
                 )
             }
