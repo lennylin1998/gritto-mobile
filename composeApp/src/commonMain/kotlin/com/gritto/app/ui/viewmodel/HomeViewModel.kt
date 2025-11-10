@@ -10,13 +10,16 @@ import com.gritto.app.ui.model.TaskListUiModel
 import com.gritto.app.ui.model.TaskUiModel
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.datetime.Clock
+import kotlinx.datetime.DatePeriod
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.TimeZone
+import kotlinx.datetime.plus
 import kotlinx.datetime.toLocalDateTime
 import moe.tlaster.precompose.viewmodel.ViewModel
 import moe.tlaster.precompose.viewmodel.viewModelScope
@@ -24,6 +27,8 @@ import moe.tlaster.precompose.viewmodel.viewModelScope
 
 private fun currentDate(): LocalDate =
     Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault()).date
+
+private const val UPCOMING_TASK_WINDOW_DAYS = 7
 
 data class HomeUiState(
     val isLoading: Boolean = false,
@@ -55,13 +60,13 @@ class HomeViewModel(
     fun refresh(date: LocalDate = _uiState.value.selectedDate) {
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isLoading = true, error = null, selectedDate = date)
-            val tasksDeferred = async { repository.fetchTasksForDay(date) }
+            val tasksDeferred = async { loadUpcomingTaskLists(date) }
             val goalsDeferred = async { repository.fetchActiveGoals() }
-
-            val (tasksResult, goalsResult) = awaitAll(tasksDeferred, goalsDeferred)
+            val tasksResult = tasksDeferred.await()
+            val goalsResult = goalsDeferred.await()
 
             val taskLists = when (tasksResult) {
-                is ApiResult.Success -> mapTasksToUi(tasksResult.value.data as List<TaskSummaryDto>)
+                is ApiResult.Success -> tasksResult.value
                 is ApiResult.Error -> {
                     _uiState.value = _uiState.value.copy(error = tasksResult.message, isLoading = false)
                     return@launch
@@ -69,7 +74,7 @@ class HomeViewModel(
             }
 
             val goals = when (goalsResult) {
-                is ApiResult.Success -> mapGoalsToUi(goalsResult.value.data as List<ActiveGoalDto>)
+                is ApiResult.Success -> mapGoalsToUi(goalsResult.value.data)
                 is ApiResult.Error -> {
                     _uiState.value = _uiState.value.copy(error = goalsResult.message, isLoading = false)
                     return@launch
@@ -96,26 +101,51 @@ class HomeViewModel(
         }
     }
 
-    private fun mapTasksToUi(tasks: List<TaskSummaryDto>): List<TaskListUiModel> {
-        val grouped = tasks.groupBy { it.date }
-        return grouped.entries
-            .sortedBy { it.key }
-            .map { (dateString, items) ->
-                val taskItems = items.map { dto ->
-                    TaskUiModel(
-                        id = dto.id,
-                        title = dto.title,
-                        startTimeLabel = dto.date,
-                        endTimeLabel = "",
-                        isCompleted = dto.done ?: (dto.status == "done"),
+    private suspend fun loadUpcomingTaskLists(startDate: LocalDate): ApiResult<List<TaskListUiModel>> = coroutineScope {
+        val dates = (0 until UPCOMING_TASK_WINDOW_DAYS).map { offset ->
+            startDate.plus(DatePeriod(days = offset))
+        }
+
+        val results = dates.map { date ->
+            async { date to repository.fetchTasksForDay(date) }
+        }.awaitAll()
+
+        val taskLists = mutableListOf<TaskListUiModel>()
+        for ((date, result) in results) {
+            when (result) {
+                is ApiResult.Success -> {
+                    val tasks = result.value.data
+                    taskLists += mapTasksForDate(date, tasks)
+                }
+                is ApiResult.Error -> {
+                    return@coroutineScope ApiResult.Error(
+                        message = result.message,
+                        statusCode = result.statusCode,
+                        cause = result.cause,
                     )
                 }
-                TaskListUiModel(
-                    id = dateString,
-                    dateLabel = dateString,
-                    tasks = taskItems,
-                )
             }
+        }
+
+        ApiResult.Success(taskLists)
+    }
+
+    private fun mapTasksForDate(date: LocalDate, tasks: List<TaskSummaryDto>): TaskListUiModel {
+        val dayLabel = date.toString()
+        val taskItems = tasks.map { dto ->
+            TaskUiModel(
+                id = dto.id,
+                title = dto.title,
+                startTimeLabel = dto.date,
+                endTimeLabel = "",
+                isCompleted = dto.done ?: (dto.status == "done"),
+            )
+        }
+        return TaskListUiModel(
+            id = dayLabel,
+            dateLabel = dayLabel,
+            tasks = taskItems,
+        )
     }
 
     private fun mapGoalsToUi(goals: List<ActiveGoalDto>): List<GoalUiModel> =
