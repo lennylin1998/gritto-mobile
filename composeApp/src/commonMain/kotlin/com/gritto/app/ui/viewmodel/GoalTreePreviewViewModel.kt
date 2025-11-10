@@ -1,8 +1,7 @@
 package com.gritto.app.ui.viewmodel
 
 import com.gritto.app.data.network.ApiResult
-import com.gritto.app.data.remote.model.PlanMilestoneDto
-import com.gritto.app.data.remote.model.PlanTaskDto
+import com.gritto.app.data.remote.model.GoalPreviewDataDto
 import com.gritto.app.data.remote.model.GoalPreviewPayloadDto
 import com.gritto.app.data.repository.GrittoRepository
 import com.gritto.app.model.GoalTreeNode
@@ -13,6 +12,9 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import moe.tlaster.precompose.viewmodel.ViewModel
 import moe.tlaster.precompose.viewmodel.viewModelScope
+import com.gritto.app.data.remote.model.GoalPreviewDto
+import com.gritto.app.data.remote.model.MilestonePreviewDto
+import com.gritto.app.data.remote.model.TaskPreviewDto
 
 data class GoalTreePreviewUiState(
     val isLoading: Boolean = true,
@@ -67,31 +69,36 @@ class GoalTreePreviewViewModel(
 }
 
 private fun GoalPreviewPayloadDto.toGoalTreeNode(): GoalTreeNode? {
-    val plan = data ?: return null
-    val goalInfo = plan.goal ?: return null
+    return data!!.toGoalTreeNode()
+}
+
+private fun GoalPreviewDataDto.toGoalTreeNode(): GoalTreeNode {
+    return goal!!.toGoalTreeNode()
+}
+
+private fun GoalPreviewDto.toGoalTreeNode(): GoalTreeNode {
     val subtitle = buildList {
-        goalInfo.description?.takeIf { it.isNotBlank() }?.let { add(it) }
-        goalInfo.hoursPerWeek?.let { add("$it h/week") }
+        description?.takeIf { it.isNotBlank() }?.let { add(it) }
+        hoursPerWeek?.let { add("$it h/week") }
     }.takeIf { it.isNotEmpty() }?.joinToString(" • ")
 
-    val milestoneNodes = plan.milestones
+    val milestoneNodes = milestones
         .takeIf { it.isNotEmpty() }
         ?.mapIndexed { index, milestone ->
             milestone.toGoalTreeNode(index)
         }
         ?: emptyList()
 
-    val rootId = id ?: goalInfo.title
     return GoalTreeNode(
-        id = rootId,
-        title = goalInfo.title,
+        id = "0",
+        title = title,
         subtitle = subtitle,
         type = GoalTreeNodeType.Goal,
         children = milestoneNodes,
     )
 }
 
-private fun PlanMilestoneDto.toGoalTreeNode(index: Int): GoalTreeNode {
+private fun MilestonePreviewDto.toGoalTreeNode(index: Int): GoalTreeNode {
     val milestoneSubtitle = description?.takeIf { it.isNotBlank() }
     val taskNodes = tasks.mapIndexed { taskIndex, task ->
         task.toGoalTreeNode(index, taskIndex)
@@ -105,10 +112,10 @@ private fun PlanMilestoneDto.toGoalTreeNode(index: Int): GoalTreeNode {
     )
 }
 
-private fun PlanTaskDto.toGoalTreeNode(milestoneIndex: Int, taskIndex: Int): GoalTreeNode {
+private fun TaskPreviewDto.toGoalTreeNode(milestoneIndex: Int, taskIndex: Int): GoalTreeNode {
     val subtitleParts = buildList {
         date?.takeIf { it.isNotBlank() }?.let { add(it) }
-        estimatedHours?.let { add("${it}h") }
+        estimatedHours.let { add("${it}h") }
         description?.takeIf { it.isNotBlank() }?.let { add(it) }
     }
     val subtitle = subtitleParts.takeIf { it.isNotEmpty() }?.joinToString(" • ")

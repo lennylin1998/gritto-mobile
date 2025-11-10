@@ -191,8 +191,7 @@ data class ChatHistoryDto(
 
 @Serializable
 data class ChatGoalPreviewRequestDto(
-    val goal: ChatGoalPreviewGoalDto,
-    val milestones: List<GoalDraftMilestoneDto> = emptyList(),
+    val goal: GoalPreviewDto,
     val iteration: Int? = null,
 )
 
@@ -260,27 +259,27 @@ data class GoalPreviewPayloadDto(
 
 @Serializable
 data class GoalPreviewDataDto(
-    val goal: PlanGoalDto? = null,
-    val milestones: List<PlanMilestoneDto> = emptyList(),
+    val goal: GoalPreviewDto? = null,
     val iteration: Int? = null,
 )
 
 @Serializable
-data class PlanGoalDto(
+data class GoalPreviewDto(
     val title: String,
     val description: String? = null,
     val hoursPerWeek: Int? = null,
+    val milestones: List<MilestonePreviewDto> = emptyList()
 )
 
 @Serializable
-data class PlanMilestoneDto(
+data class MilestonePreviewDto(
     val title: String,
     val description: String? = null,
-    val tasks: List<PlanTaskDto> = emptyList(),
+    val tasks: List<TaskPreviewDto> = emptyList(),
 )
 
 @Serializable
-data class PlanTaskDto(
+data class TaskPreviewDto(
     val title: String,
     val description: String? = null,
     val date: String? = null,

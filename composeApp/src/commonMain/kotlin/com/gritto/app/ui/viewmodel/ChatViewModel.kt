@@ -3,10 +3,12 @@ package com.gritto.app.ui.viewmodel
 import com.gritto.app.data.network.ApiResult
 import com.gritto.app.data.remote.model.ChatContextDto
 import com.gritto.app.data.remote.model.ChatEntryDto
-import com.gritto.app.data.remote.model.ChatGoalPreviewGoalDto
 import com.gritto.app.data.remote.model.ChatGoalPreviewRequestDto
 import com.gritto.app.data.remote.model.ChatMessageRequestDto
+import com.gritto.app.data.remote.model.GoalPreviewDto
 import com.gritto.app.data.remote.model.GoalPreviewPayloadDto
+import com.gritto.app.data.remote.model.MilestonePreviewDto
+import com.gritto.app.data.remote.model.TaskPreviewDto
 import com.gritto.app.data.repository.GrittoRepository
 import com.gritto.app.model.ChatMessage
 import io.ktor.util.date.getTimeMillis
@@ -129,15 +131,21 @@ class ChatViewModel(
                     result.value.context?.let { updatedContext ->
                         sessionContext = updatedContext
                     }
+                    result.value.action?.payload?.goalPreview?.let { payload ->
+                        latestGoalPreview = payload.toChatGoalPreviewRequest()
+                    }
                     val replyText = result.value.reply
                     val agentMessage = ChatMessage.Agent(
                         id = "agent-${getTimeMillis()}",
                         text = replyText,
                     )
+                    val newGoalPreviewId = result.value.state?.goalPreviewId
+                        ?: result.value.action?.payload?.goalPreviewId
+                        ?: result.value.action?.payload?.goalPreview?.id
                     _uiState.update { state ->
                         state.copy(
                             messages = state.messages + agentMessage,
-                            goalPreviewId = state.goalPreviewId,
+                            goalPreviewId = newGoalPreviewId ?: state.goalPreviewId,
                             isSessionActive = result.value.state?.sessionActive ?: state.isSessionActive,
                         )
                     }
@@ -169,4 +177,32 @@ class ChatViewModel(
             ),
         )
     }
+}
+
+private fun GoalPreviewPayloadDto.toChatGoalPreviewRequest(): ChatGoalPreviewRequestDto? {
+    val plan = data ?: return null
+    val goal = plan.goal ?: return null
+    val milestoneDrafts = plan.goal.milestones.map { milestone ->
+        MilestonePreviewDto(
+            title = milestone.title,
+            description = milestone.description,
+            tasks = milestone.tasks.map { task ->
+                TaskPreviewDto(
+                    title = task.title,
+                    description = task.description,
+                    date = task.date,
+                    estimatedHours = task.estimatedHours,
+                )
+            },
+        )
+    }
+    return ChatGoalPreviewRequestDto(
+        goal = GoalPreviewDto(
+            title = goal.title,
+            description = goal.description,
+            hoursPerWeek = goal.hoursPerWeek,
+            milestones = milestoneDrafts,
+        ),
+        iteration = plan.iteration,
+    )
 }

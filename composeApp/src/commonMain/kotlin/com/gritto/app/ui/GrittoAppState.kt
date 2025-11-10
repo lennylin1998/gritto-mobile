@@ -70,8 +70,8 @@ fun rememberGrittoState(): GrittoAppState {
     val apiClient = remember {
         ApiClient(
             httpClient = httpClient,
-            baseUrl = "http://10.194.233.51:8080",
-//            baseUrl = AppConfig.API_BASE_URL,
+//            baseUrl = "http://10.194.233.51:8080",
+            baseUrl = AppConfig.API_BASE_URL,
             tokenProvider = { tokenHolder.token },
         )
     }
